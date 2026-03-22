@@ -22,6 +22,23 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+
+app.use(express.json()); // This allows the server to read the URL you sent
+
+app.post('/api/check', (req, res) => {
+    const receivedUrl = req.body.url;
+    console.log("Server received URL to check:", receivedUrl);
+
+    // This is where Maddie's logic will eventually go!
+    // For now, we send a dummy response to prove it works.
+    res.json({ 
+        message: "Analysis complete. This link appears safe (Prototype Mode)." 
+    });
+});
+
+
+
+
 // 6. THE LISTENER: This turns the server on. 
 // It stays open 'listening' for requests on Port 3000.
 app.listen(3000, () => {
