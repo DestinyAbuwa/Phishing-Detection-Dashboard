@@ -17,6 +17,7 @@ body{
     background-color:rgba(224,228,231,0.2);
     z-index:1;
     
+    
 
 }
 
@@ -26,24 +27,25 @@ body{
     justify-content: right;
     list-style:none ;
     margin-right: 15%;
+    font-weight: bold;
 
 }
 
 .logo{
     flex: 1 1 auto;
     margin-left: 10%;
-    text-transform: uppercase;
+    
     letter-spacing:1px;
     font-weight: bold;
     font-size: 25px;
+    
 
 }
 a{
     margin:15px;
     color: #000;
     text-decoration: none;
-    text-transform: uppercase;
-    
+   
 }
 #home{
     
