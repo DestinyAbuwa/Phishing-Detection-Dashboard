@@ -1,0 +1,161 @@
+body{
+    margin: 0;
+    padding: 0;
+    font-family: montserrat;
+}
+.menu-area{
+    font-family: "Poppins", sans-serif;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction:row;
+    flex-wrap:wrap;
+    background-color:rgba(224,228,231,0.2);
+    z-index:1;
+    
+
+}
+
+.nav{
+    display:flex;
+    font-family: "Poppins", sans-serif;
+    justify-content: right;
+    list-style:none ;
+    margin-right: 15%;
+
+}
+
+.logo{
+    flex: 1 1 auto;
+    margin-left: 10%;
+    text-transform: uppercase;
+    letter-spacing:1px;
+    font-weight: bold;
+    font-size: 25px;
+
+}
+a{
+    margin:15px;
+    color: #000;
+    text-decoration: none;
+    text-transform: uppercase;
+    
+}
+#home{
+    
+    position: relative;
+    font-family: "Poppins", sans-serif;
+    padding-top: 100px;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+    background-image: url("./images/backround2.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    text-align: center;
+
+}
+
+.mode-switch{
+    display: inline-flex;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 8px 20px rgba(10, 24, 42, 0.14);
+}
+
+.mode-btn{
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    color: #14345d;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.mode-btn.is-active{
+    background-color: #1358f5;
+    color: #fff;
+}
+
+.checker-panels{
+    width: 100%;
+}
+
+.checker-panels .panel{
+    display: none;
+}
+
+.Url,
+.email-content{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+    width: min(680px, 92%);
+    margin: 0 auto;
+    padding: 28px;
+    border-radius: 14px;
+    background-color: rgba(255, 255, 255, 0.84);
+    box-shadow: 0 12px 30px rgba(10, 24, 42, 0.16);
+}
+
+.Url h1,
+.email-content h1{
+    font-size: 34px;
+    margin: 0 0 8px;
+    color: #10243e;
+    text-align: left;
+}
+
+.Url input,
+.email-content input,
+.email-content textarea{
+    font-family: "Poppins", sans-serif;
+    width: 100%;
+    border: 1px solid #c7d3df;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.email-content textarea{
+    
+    min-height: 160px;
+    resize: vertical;
+}
+
+.Url button,
+.email-content button{
+    align-self: flex-end;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 18px;
+    background-color: #1358f5;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.Url button:hover,
+.email-content button:hover{
+    background-color: #0f46c2;
+}
+
+.checker-panels .panel.active{
+    display: flex;
+}

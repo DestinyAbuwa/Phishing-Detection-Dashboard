@@ -26,3 +26,35 @@ function checkURL() {
         resultDiv.innerHTML = "Error connecting to server.";
     });
 }
+
+/*
+ * Feature: Checker Mode Switch
+ * Toggles the visible panel (URL or Email) and active tab button.
+ */
+const modeButtons = document.querySelectorAll('.mode-btn');
+const panels = document.querySelectorAll('.panel');
+
+function setCheckerMode(mode) {
+    modeButtons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.mode === mode);
+    });
+
+    panels.forEach((panel) => {
+        const isSelectedPanel = panel.classList.contains(`panel-${mode}`);
+        panel.classList.toggle('active', isSelectedPanel);
+    });
+}
+
+function initializeCheckerModeSwitch() {
+    if (!modeButtons.length || !panels.length) {
+        return;
+    }
+
+    modeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            setCheckerMode(button.dataset.mode);
+        });
+    });
+}
+
+initializeCheckerModeSwitch();
