@@ -1,47 +1,65 @@
-// 1. Import the Express framework (the 'kit' for building servers)
 const express = require('express');
-
-// 2. Import 'path' (a built-in tool to help find folders on your computer)
 const path = require('path');
+const mysql = require('mysql2'); 
 
-// 3. Initialize the app so we can start adding features to it
 const app = express();
-
-// 4. MIDDLEWARE: Tell the server that if a user asks for an image or CSS file, 
-// look inside the 'public' folder automatically.
 app.use(express.static('public'));
+app.use(express.json()); 
 
-// 5. THE ROUTE: This listens for someone visiting your "Homepage" (the / path)
-app.get('/', (req, res) => {
-  
-  // 'req' (Request) = Info coming IN from the user.
-  // 'res' (Response) = What we send BACK to the user.
-  
-  // Here, we find the index.html file inside 'public' and ship it to their browser.
-  // __dirname (usually used instead of __context) means "the folder this file is in."
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// DATABASE CONNECTION
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '', // Put your password here if you have one
+    database: 'phishing_db'
 });
 
+db.connect(err => {
+    if (err) {
+        console.error('Database connection failed: ' + err.stack);
+        return;
+    }
+    console.log('Connected to MySQL database.');
 
-app.use(express.json()); // This allows the server to read the URL you sent
+    const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS urls (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        url TEXT,
+        subject TEXT,
+        sender TEXT,
+        body_content TEXT,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
 
-app.post('/api/check', (req, res) => {
-    const receivedUrl = req.body.url;
-    console.log("Server received URL to check:", receivedUrl);
-
-    // This is where Maddie's logic will eventually go!
-    // For now, we send a dummy response to prove it works.
-    res.json({ 
-        message: "Analysis complete. This link appears safe (Prototype Mode)." 
+    db.query(createTableQuery, (err) => {
+        if (err) console.error("Error creating table:", err);
+        else console.log("Table 'urls' is ready.");
     });
 });
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
+app.post('/api/check', (req, res) => {
+    const { url, subject, sender, body_content } = req.body;
+    
+    console.log("Saving to Database:", { url, subject, sender });
 
+    const insertQuery = 'INSERT INTO urls (url, subject, sender, body_content) VALUES (?, ?, ?, ?)';
+    
+    db.query(insertQuery, [url, subject, sender, body_content], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Database save failed" });
+        }
+        res.json({ 
+            message: `Logged! Subject: "${subject}" is being analyzed.` 
+        });
+    });
+});
 
-// 6. THE LISTENER: This turns the server on. 
-// It stays open 'listening' for requests on Port 3000.
 app.listen(3000, () => {
-  // This message only appears in YOUR terminal, not the user's browser.
   console.log('Server started on http://localhost:3000');
 });
