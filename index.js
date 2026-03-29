@@ -32,14 +32,18 @@ app.use(express.json()); // This allows the server to read the URL you sent
 
 // THE CHECK ROUTE: This handles the URL submissions from the frontend.
 app.post('/api/check', (req, res) => {
-    // Extract the URL the user typed in from the 'request body'
-    const receivedUrl = req.body.url;
-    console.log("Server received URL to check:", receivedUrl);
+    // Extract everything the user typed in from the 'request body'
+    // We use the names: url, subject, sender, receiver, and body_content
+    const { url, subject, sender, receiver, body_content } = req.body;
+
+    console.log("Server received submission for:", url || subject);
 
     // SQL COMMAND: We prepare a 'query' to tell MySQL to put this URL into our table.
     // The '?' are placeholders to keep the data secure (prevents SQL Injection).
-    const sql = 'INSERT INTO submissions (url, status) VALUES (?, ?)';
-    const values = [receivedUrl, 'pending'];
+    const sql = `INSERT INTO submissions 
+                 (url, sender_email, receiver_email, subject, email_body, status) 
+                 VALUES (?, ?, ?, ?, ?, ?)`;
+    const values = [url, sender, receiver, subject, body_content, 'pending'];
 
     // RUN THE QUERY: Send the command to the database
     db.query(sql, values, (err, result) => {
@@ -51,7 +55,7 @@ app.post('/api/check', (req, res) => {
 
         // SUCCESS: If it worked, we send back a JSON response with the new ID number.
         res.json({ 
-            message: "URL received and saved to database!",
+            message: "Submission received and saved to database!",
             submissionId: result.insertId 
         });
     });

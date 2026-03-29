@@ -24,11 +24,13 @@
         </div>
 
         <div class="checker-panels">
+            <div id="result" style="text-align: center; padding-bottom: 20px; font-weight: bold; min-height: 24px;"></div>
+
             <div class="Url panel panel-url active">
                 <h1>URL Checker</h1>
                 <input type="text" id="urlInput" placeholder="Paste link here...">
                 <button onclick="checkURL()">Scan Link</button>
-                <div id="result"></div>
+                
             </div>
 
             <form class="email-content panel panel-email">
@@ -37,9 +39,12 @@
                 <input type="email" id="receiver" placeholder="Receiver Email">
                 <input type="text" id="subject" placeholder="Subject">
                 <textarea id="email-body" placeholder="Email Body"></textarea>
-                <button type="button">Analyze Email</button>
+                <button type="button" onclick="analyzeEmail()">Analyze Email</button>
             </form>
         </div>
+
+        
+
     </section>
 
 
