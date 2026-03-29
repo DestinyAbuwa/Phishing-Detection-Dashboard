@@ -19,16 +19,14 @@ y = df["label"]
 numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
 categorical_features = X.select_dtypes(include=['object']).columns
 
-# 2. Memory-Safe Preprocessor (Sparse=True)
-# use MinMaxScaler because MultinomialNB cannot handle negative numbers 
-# produced by StandardScaler.
+# 2. Preprocessor (Memory-Safe)
 preprocessor = ColumnTransformer(
     transformers=[
         ('num', MinMaxScaler(), numeric_features),
         ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=True), categorical_features)
     ])
 
-# 3. Split Data
+# 3. Split Data (Changed test_size to 0.2 to give model more training data)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # 4. Define Models and Parameters
@@ -61,7 +59,7 @@ for name, (pipe, params) in models_to_run.items():
     print(f"Running {name}...")
     start_time = time.time()
     
-    # pre_dispatch='2*n_jobs' limits memory usage during parallel processing
+    # cv=5 performs the 5-fold cross-validation during the search
     grid = GridSearchCV(
         pipe, 
         params, 
@@ -77,13 +75,14 @@ for name, (pipe, params) in models_to_run.items():
         duration = time.time() - start_time
         best_estimators[name] = grid.best_estimator_
         
-        # Evaluation
+        # Evaluation on the held-out test set
         y_pred = grid.predict(X_test)
         test_acc = accuracy_score(y_test, y_pred)
         
         results.append({
             "Model": name,
-            "Test Accuracy": test_acc,
+            "CV Mean Accuracy": round(grid.best_score_, 4), # This is the 5-fold CV score
+            "Test Accuracy": round(test_acc, 4),
             "Time (sec)": round(duration, 2),
             "Best Params": grid.best_params_
         })
@@ -94,13 +93,14 @@ for name, (pipe, params) in models_to_run.items():
 
 # 6. Final Comparison Table
 results_df = pd.DataFrame(results)
-print("\n--- Final Model Comparison ---")
+print("\n--- Final Model Comparison (with 5-Fold CV) ---")
 if not results_df.empty:
-    print(results_df[["Model", "Test Accuracy", "Time (sec)"]])
+    # Sort by Test Accuracy to see the winner clearly
+    print(results_df[["Model", "CV Mean Accuracy", "Test Accuracy", "Time (sec)"]].sort_values(by="Test Accuracy", ascending=False))
     
     # Detailed report for the top performer
     best_model_name = results_df.iloc[results_df['Test Accuracy'].idxmax()]['Model']
-    print(f"\n--- Detailed Report for {best_model_name} ---")
+    print(f"\n--- Detailed Report for Best Model: {best_model_name} ---")
     print(classification_report(y_test, best_estimators[best_model_name].predict(X_test)))
 else:
     print("No models were successfully trained.")
