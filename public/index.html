@@ -2,14 +2,55 @@
 <html>
 <head>
     <title>Phishing Detection Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <h1>Phishing Link Scanner</h1>
-    <input type="text" id="urlInput" placeholder="Paste link here...">
-    <button onclick="checkURL()">Scan Link</button>
-    <div id="result"></div>
+    <div class="menu-area">
+        <a href="#" class="logo">Phishing Detection</a>
+        <ul class="nav">
+        <li><a href="#home">Home</a></li>
+        </ul>
+
+    </div>
+    <section id="home">
+        <div class="mode-switch">
+            <button type="button" class="mode-btn is-active" data-mode="url">URL Checker</button>
+            <button type="button" class="mode-btn" data-mode="email">Email Checker</button>
+        </div>
+
+        <div class="checker-panels">
+            <div id="result" style="text-align: center; padding-bottom: 20px; font-weight: bold; min-height: 24px;"></div>
+
+            <div class="Url panel panel-url active">
+                <h1>URL Checker</h1>
+                <input type="text" id="urlInput" placeholder="Paste link here...">
+                <button onclick="checkURL()">Scan Link</button>
+                
+            </div>
+
+            <form class="email-content panel panel-email">
+                <h1>Email Content Checker</h1>
+                <input type="email" id="sender" placeholder="Sender Email">
+                <input type="email" id="receiver" placeholder="Receiver Email">
+                <input type="text" id="subject" placeholder="Subject">
+                <textarea id="email-body" placeholder="Email Body"></textarea>
+                <button type="button" onclick="analyzeEmail()">Analyze Email</button>
+            </form>
+        </div>
+
+        
+
+    </section>
+
 
     <script src="script.js"></script>
+
+    
+    
 </body>
 </html>
