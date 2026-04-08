@@ -112,6 +112,8 @@ function mountRiskCard(mode) {
 }
 
 // Added to turn backend prediction data into one number the UI can use as a risk score.
+function getRiskScore(prediction) {
+    if (prediction && prediction.risk_score != null) {
         return Number(prediction.risk_score);
     }
 
