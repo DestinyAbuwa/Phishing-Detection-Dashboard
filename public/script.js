@@ -149,12 +149,12 @@ function checkURL() {
         alert("Please paste a URL first!");
         return;
     }
+    document.getElementById('testedUrlHeading').textContent = `Tested URL: ${url}`;
 
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
-    resultDiv.style.color = '#14345d';
-    resultDiv.innerHTML = "Scanning: " + url + "...";
+    
     // Added so the bar appears immediately at 0 while we wait for the prediction response.
     setEmailConfidenceBar(0);
 
@@ -200,6 +200,7 @@ function checkURL() {
         resultDiv.style.color = '#7a1f1f';
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
+    
 }
 
 // ANALYZE EMAIL FUNCTION: This runs when the user clicks "Analyze Email"
@@ -318,5 +319,7 @@ function initializeCheckerModeSwitch() {
         });
     });
 }
+
+
 
 initializeCheckerModeSwitch();
