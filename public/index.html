@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="loading-bar.css">
 </head>
 
 <body>
@@ -41,13 +42,34 @@
                 <textarea id="email-body" placeholder="Email Body"></textarea>
                 <button type="button" onclick="analyzeEmail()">Analyze Email</button>
             </form>
+            <div id="riskCard" class="risk-card" style="display: none;">
+                <!-- Custom ldBar wave:
+                     data-bbox = x y width height of the drawing area
+                     M20 90 = start point (x=20, y=90)
+                     Each Q uses: controlX controlY endX endY
+                     Q80 25 140 90 = curve up toward (80,25), then end at (140,90)
+                     Smaller controlY values go higher; larger ones go lower
+                     data-value = starting fill percentage before JS updates it -->
+                <h1 id="testedUrlHeading" class="tested-url-heading" style="display: none;">Tested URL:</h1>
+                <div id="emailConfidenceBar" class="ldBar label-center"
+                    style="width: min(700px, 88vw); height: 130px; margin: 0 auto;"
+                    data-stroke="data:ldbar/res,gradient(0,1,#9df,#9fd,#df9,#fd9)"
+                    data-stroke-width="14"
+                    data-stroke-trail-width="9"
+                    data-padding="14"
+                    data-set-dim="false"
+                    data-bbox="20 25 840 130"
+                    data-path="M20 90Q80 25 140 90Q200 155 260 90Q320 25 380 90Q440 155 500 90Q560 25 620 90Q680 155 740 90Q800 25 860 90"
+                    data-value="0"></div>
+                <p id="riskLevelText" class="risk-level-text">Risk Level</p>
+            </div>
         </div>
 
         
 
     </section>
 
-
+    <script src="loading-bar.js"></script>
     <script src="script.js"></script>
 
     

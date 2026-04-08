@@ -1,3 +1,141 @@
+
+const emailConfidenceBarElement = document.getElementById('emailConfidenceBar');
+const riskCardElement = document.getElementById('riskCard');
+const riskLevelTextElement = document.getElementById('riskLevelText');
+// This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
+const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
+// Added for the shared risk UI so both checkers use the same score labels and colors.
+const RISK_STYLES = {
+    low: {
+        label: 'Low Risk',
+        color: '#1f8f4e',
+        trailColor: '#bfe7cf'
+    },
+    medium: {
+        label: 'Medium Risk',
+        color: '#b7791f',
+        trailColor: '#f3ddb7'
+    },
+    high: {
+        label: 'High Risk',
+        color: '#7a1f1f',
+        trailColor: '#e7bcbc'
+    }
+};
+
+// Added to group numeric scores into your Low / Medium / High risk ranges.
+function getRiskStyle(score) {
+    const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
+
+    if (normalizedScore <= 39) {
+        return RISK_STYLES.low;
+    }
+
+    if (normalizedScore <= 69) {
+        return RISK_STYLES.medium;
+    }
+
+    return RISK_STYLES.high;
+}
+
+// Added to keep the result text, wave bar, and risk label in sync visually.
+function applyRiskStyle(score, resultDiv) {
+    const riskStyle = getRiskStyle(score);
+
+    if (resultDiv) {
+        resultDiv.style.color = riskStyle.color;
+    }
+
+    if (!emailConfidenceBarElement) {
+        return riskStyle;
+    }
+
+    const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
+    const mainline = emailConfidenceBarElement.querySelector('.mainline');
+    const baseline = emailConfidenceBarElement.querySelector('.baseline');
+    const label = emailConfidenceBarElement.querySelector('.ldBar-label');
+
+    if (mainline) {
+        mainline.setAttribute('stroke', riskStyle.color);
+    }
+
+    if (baseline) {
+        baseline.setAttribute('stroke', riskStyle.trailColor);
+    }
+
+    if (label) {
+        label.style.color = riskStyle.color;
+    }
+
+    if (riskLevelTextElement) {
+        riskLevelTextElement.textContent = riskStyle.label;
+        riskLevelTextElement.style.color = riskStyle.color;
+    }
+
+    if (riskCardElement) {
+        riskCardElement.style.borderColor = riskStyle.trailColor;
+    }
+
+    return riskStyle;
+}
+
+// Added to show the shared bar card and fill it with the latest score.
+function setEmailConfidenceBar(value) {
+    if (!emailConfidenceBarElement) {
+        return;
+    }
+
+    if (riskCardElement) {
+        riskCardElement.style.display = 'block';
+    }
+    const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
+    const normalizedValue = Math.max(0, Math.min(100, Number(value) || 0));
+    bar.set(normalizedValue);
+}
+
+// Added so one shared risk card can be moved between the URL and Email panels.
+function mountRiskCard(mode) {
+    if (!riskCardElement) {
+        return;
+    }
+
+    const targetPanel = document.querySelector(`.panel-${mode}`);
+    if (targetPanel && riskCardElement.parentElement !== targetPanel) {
+        // Move the shared risk card into whichever panel is currently active.
+        targetPanel.appendChild(riskCardElement);
+    }
+
+    if (testedUrlHeadingElement) {
+        // Only show "Tested URL:" when the URL checker is active.
+        testedUrlHeadingElement.style.display = mode === 'url' ? 'block' : 'none';
+    }
+}
+
+// Added to turn backend prediction data into one number the UI can use as a risk score.
+        return Number(prediction.risk_score);
+    }
+
+    // Fallback: if the backend only returns confidence, convert it into a risk-like score.
+    // Phishing + high confidence => high risk. Legitimate + high confidence => low risk.
+    const confidencePercent = (Number(prediction?.confidence) || 0) * 100;
+    return prediction?.label === 'Phishing'
+        ? confidencePercent
+        : 100 - confidencePercent;
+}
+
+// Added to hide and reset the shared risk UI when switching tabs or when a request fails.
+function hideEmailConfidenceBar() {
+    if (!emailConfidenceBarElement) {
+        return;
+    }
+
+    if (riskCardElement) {
+        riskCardElement.style.display = 'none';
+    }
+    const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
+    bar.set(0, false);
+    applyRiskStyle(0);
+}
 // CHECK URL FUNCTION: This runs when the user clicks the "Scan" button.
 // It grabs the URL from the input box and sends it to our Node.js server.
 function checkURL() {
@@ -13,7 +151,12 @@ function checkURL() {
     }
 
     // UI FEEDBACK: Let the user know the process has started
+    // Added so the shared risk card appears inside the URL panel.
+    mountRiskCard('url');
+    resultDiv.style.color = '#14345d';
     resultDiv.innerHTML = "Scanning: " + url + "...";
+    // Added so the bar appears immediately at 0 while we wait for the prediction response.
+    setEmailConfidenceBar(0);
 
     // --- NEW: Get prediction from Python ML service (port 5000) ---
     fetch('http://localhost:5000/predict_url', {
@@ -23,10 +166,11 @@ function checkURL() {
     })
     .then(response => response.json())
     .then(prediction => {
-        const confidencePercent = (prediction.confidence * 100).toFixed(1);
-        // Display the prediction result to the user
-        resultDiv.innerHTML = `<strong>Result:</strong> ${prediction.label} (${confidencePercent}% confidence)`;
-
+        // Changed from showing raw confidence only to computing one UI risk score.
+        const riskScore = getRiskScore(prediction).toFixed(1);
+        setEmailConfidenceBar(riskScore);
+        const riskStyle = applyRiskStyle(riskScore, resultDiv);
+       
         // --- THE FETCH REQUEST (YOUR EXISTING CODE): This is the "bridge" to your Backend.
         // It sends the URL to the '/api/check' route to save to MySQL.
         fetch('/api/check', {
@@ -52,6 +196,8 @@ function checkURL() {
     .catch(err => {
         // ERROR HANDLING: Runs if the prediction service is down
         console.error("Prediction error:", err);
+        hideEmailConfidenceBar();
+        resultDiv.style.color = '#7a1f1f';
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
 }
@@ -72,7 +218,10 @@ function analyzeEmail() {
         return;
     }
 
-    resultDiv.innerHTML = "Analyzing email content...";
+    // Added so the shared risk card appears inside the Email panel.
+    mountRiskCard('email');
+    // Added so the bar appears immediately at 0 while we wait for the prediction response.
+    setEmailConfidenceBar(0);
 
     // --- NEW: Get prediction from Python ML service (port 5000) ---
     fetch('http://localhost:5000/predict_email', {
@@ -87,10 +236,11 @@ function analyzeEmail() {
     })
     .then(response => response.json())
     .then(prediction => {
-        const confidencePercent = (prediction.confidence * 100).toFixed(1);
-        // Display the prediction result to the user
-        resultDiv.innerHTML = `<strong>Result:</strong> ${prediction.label} (${confidencePercent}% confidence)`;
-
+        // Changed from showing raw confidence only to computing one UI risk score.
+        const riskScore = getRiskScore(prediction).toFixed(1);
+        setEmailConfidenceBar(riskScore);
+        const riskStyle = applyRiskStyle(riskScore, resultDiv);
+        
         // 3. The Fetch Request (YOUR EXISTING CODE): Sending the data to your Node server for storage
         fetch('/api/check', {
             method: 'POST',
@@ -122,6 +272,8 @@ function analyzeEmail() {
     })
     .catch(err => {
         console.error("Prediction error:", err);
+        hideEmailConfidenceBar();
+        resultDiv.style.color = '#7a1f1f';
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
 }
@@ -134,6 +286,7 @@ const modeButtons = document.querySelectorAll('.mode-btn');
 const panels = document.querySelectorAll('.panel');
 
 function setCheckerMode(mode) {
+    mountRiskCard(mode);
     modeButtons.forEach((button) => {
         button.classList.toggle('is-active', button.dataset.mode === mode);
     });
@@ -145,8 +298,10 @@ function setCheckerMode(mode) {
 
     const resultDiv = document.getElementById('result');
     if (resultDiv) {
+        resultDiv.style.color = '#14345d';
         resultDiv.innerHTML = ""; 
     }
+    hideEmailConfidenceBar();
 
 }
 
@@ -154,6 +309,8 @@ function initializeCheckerModeSwitch() {
     if (!modeButtons.length || !panels.length) {
         return;
     }
+
+    mountRiskCard('url');
 
     modeButtons.forEach((button) => {
         button.addEventListener('click', () => {

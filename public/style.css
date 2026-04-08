@@ -96,6 +96,10 @@ a{
     width: 100%;
 }
 
+#result{
+    color: #14345d;
+}
+
 .checker-panels .panel{
     display: none;
 }
@@ -160,4 +164,32 @@ a{
 
 .checker-panels .panel.active{
     display: flex;
+}
+
+.risk-card{
+    width: 100%;
+    margin: 8px 0 0;
+    padding: 14px 0 4px;
+    border-top: 1px solid rgba(199, 211, 223, 0.85);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+.risk-level-text{
+    margin: 8px 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #14345d;
+    text-align: center;
+    letter-spacing: 0.2px;
+}
+
+.tested-url-heading{
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #10243e;
+    text-align: center;
 }
