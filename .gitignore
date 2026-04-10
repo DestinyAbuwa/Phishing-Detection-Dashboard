@@ -137,3 +137,14 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+.vs/VSWorkspaceState.json
+.vs/slnx.sqlite
+.vs/ProjectSettings.json
+.vs/Phishing-Detection-Dashboard/v17/DocumentLayout.json
+.vs/Phishing-Detection-Dashboard/v17/DocumentLayout.backup.json
+.vs/Phishing-Detection-Dashboard/v17/.wsuo
+.vs/Phishing-Detection-Dashboard/FileContentIndex/cbeb73e5-d25d-452c-867a-7a437fbabb04.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/cbd4981f-58e6-4fce-9c0f-75162cd7fc6a.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/c4e158f6-5662-41b3-852c-d9bfee19516d.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/3b0a5d5c-2ed0-4405-8e80-6780fb84d8d1.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/2e561484-085f-4210-93ae-e397556c3f61.vsidx
