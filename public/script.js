@@ -178,7 +178,11 @@ function checkURL() {
         fetch('/api/check', {
             method: 'POST', // We use POST because we are sending data
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url }) // Convert the URL into a JSON string
+            body: JSON.stringify({
+                url: url,
+                status: prediction.label,
+                risk_score: riskScore // "Phishing" or "Legitimate"
+             }) // Convert the URL into a JSON string // The number for your risk_score column
         })
         .then(response => response.json()) // Wait for the server to send back a JSON response
         .then(data => {
@@ -253,7 +257,9 @@ function analyzeEmail() {
                 sender: sender.value,
                 receiver: receiver.value,
                 subject: subject.value,
-                body_content: body_content.value
+                body_content: body_content.value,
+                status: prediction.label,
+                risk_score: riskScore
             })
         })
         .then(response => response.json())
