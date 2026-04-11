@@ -6,17 +6,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="loading-bar.css">
 </head>
 
-<body>
+<body data-theme="light">
     <div class="menu-area">
         <a href="#" class="logo">NoPhish</a>
         <ul class="nav">
         <li><a href="#home">Home</a></li>
         </ul>
-
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme">Dark mode</button>
     </div>
     <section class="hero-banner"></section>
     <section id="home">
@@ -26,7 +28,7 @@
         </div>
 
         <div class="checker-panels">
-            <div id="result" style="text-align: center; padding-bottom: 20px; font-weight: bold; min-height: 24px;"></div>
+            <div id="result" class="result-message result-default"></div>
 
             <div class="Url panel panel-url active">
                 <h1>URL Checker</h1>

@@ -1,10 +1,12 @@
-
+// Shared DOM references for the risk card, theme toggle, and result UI.
 const emailConfidenceBarElement = document.getElementById('emailConfidenceBar');
 const riskCardElement = document.getElementById('riskCard');
 const riskLevelTextElement = document.getElementById('riskLevelText');
+const themeToggleButton = document.getElementById('themeToggle');
 // This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
-// Added for the shared risk UI so both checkers use the same score labels and colors.
+// Risk labels and colors for the shared wave bar.
+// These do not depend on light/dark mode because risk severity should stay visually consistent.
 const RISK_STYLES = {
     low: {
         label: 'Low Risk',
@@ -23,6 +25,52 @@ const RISK_STYLES = {
     }
 };
 
+// Switches the result message between the neutral/default style and the error style.
+function setResultState(resultDiv, state) {
+    if (!resultDiv) {
+        return;
+    }
+
+    resultDiv.classList.remove('result-default', 'result-error');
+    resultDiv.classList.add(state === 'error' ? 'result-error' : 'result-default');
+}
+
+// Applies either the light or dark theme by changing body[data-theme].
+// CSS listens for this attribute and swaps the color variables automatically.
+function applyTheme(theme) {
+    document.body.dataset.theme = theme;
+
+    // The button label tells the user what the next click will do.
+    if (themeToggleButton) {
+        themeToggleButton.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+    }
+}
+
+// Initializes the theme when the page first loads.
+// Priority order:
+// 1. Use the user's saved choice from localStorage.
+// 2. If nothing was saved yet, fall back to the system color-scheme preference.
+function initializeThemeToggle() {
+    const savedTheme = localStorage.getItem('theme');
+    const preferredTheme = savedTheme || (
+        window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    );
+
+    // Apply the starting theme immediately so the page renders with the right colors.
+    applyTheme(preferredTheme);
+
+    if (!themeToggleButton) {
+        return;
+    }
+
+    // When the button is clicked, flip to the opposite theme and save that choice.
+    themeToggleButton.addEventListener('click', () => {
+        const nextTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme(nextTheme);
+        localStorage.setItem('theme', nextTheme);
+    });
+}
+
 // Added to group numeric scores into your Low / Medium / High risk ranges.
 function getRiskStyle(score) {
     const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
@@ -38,12 +86,16 @@ function getRiskStyle(score) {
     return RISK_STYLES.high;
 }
 
-// Added to keep the result text, wave bar, and risk label in sync visually.
+// Keeps the result text, wave bar, and risk label in sync visually.
+// This is why one risk score updates several parts of the UI at once.
 function applyRiskStyle(score, resultDiv) {
     const riskStyle = getRiskStyle(score);
 
     if (resultDiv) {
+        // Risk states still use direct colors because they are semantic feedback,
+        // not part of the page theme. We also remove any default/error theme class first.
         resultDiv.style.color = riskStyle.color;
+        resultDiv.classList.remove('result-default', 'result-error');
     }
 
     if (!emailConfidenceBarElement) {
@@ -79,7 +131,7 @@ function applyRiskStyle(score, resultDiv) {
     return riskStyle;
 }
 
-// Added to show the shared bar card and fill it with the latest score.
+// Shows the shared bar card and fills it with the latest score.
 function setEmailConfidenceBar(value) {
     if (!emailConfidenceBarElement) {
         return;
@@ -93,7 +145,8 @@ function setEmailConfidenceBar(value) {
     bar.set(normalizedValue);
 }
 
-// Added so one shared risk card can be moved between the URL and Email panels.
+// Moves the one shared risk card between the URL and Email panels.
+// Instead of rendering two separate cards, we reuse the same element and place it under the active checker.
 function mountRiskCard(mode) {
     if (!riskCardElement) {
         return;
@@ -111,7 +164,7 @@ function mountRiskCard(mode) {
     }
 }
 
-// Added to turn backend prediction data into one number the UI can use as a risk score.
+// Turns backend prediction data into one number the UI can use as a risk score.
 function getRiskScore(prediction) {
     if (prediction && prediction.risk_score != null) {
         return Number(prediction.risk_score);
@@ -125,7 +178,7 @@ function getRiskScore(prediction) {
         : 100 - confidencePercent;
 }
 
-// Added to hide and reset the shared risk UI when switching tabs or when a request fails.
+// Hides and resets the shared risk UI when switching tabs or when a request fails.
 function hideEmailConfidenceBar() {
     if (!emailConfidenceBarElement) {
         return;
@@ -136,12 +189,18 @@ function hideEmailConfidenceBar() {
     }
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     bar.set(0, false);
+
+    // Reset the bar styling back to the "low/default" appearance after hiding it.
     applyRiskStyle(0);
 }
-// CHECK URL FUNCTION: This runs when the user clicks the "Scan" button.
-// It grabs the URL from the input box and sends it to our Node.js server.
+
+// CHECK URL FUNCTION:
+// 1. Read the URL from the input.
+// 2. Ask the Python service for a phishing prediction.
+// 3. Update the shared risk card with that score.
+// 4. Send the URL to the Node backend so it can be stored.
 function checkURL() {
-    // Get the text the user typed and the div where we will show the result
+    // Get the text the user typed and the div where we will show status/error feedback.
     const userUrl = document.getElementById('urlInput');
     const resultDiv = document.getElementById('result');
     const url = userUrl.value.trim();
@@ -151,16 +210,18 @@ function checkURL() {
         alert("Please paste a URL first!");
         return;
     }
+
+    // Update the shared heading so the risk card shows which URL was just tested.
     document.getElementById('testedUrlHeading').textContent = `Tested URL: ${url}`;
 
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
     
-    // Added so the bar appears immediately at 0 while we wait for the prediction response.
+    // Show the risk bar immediately at 0 so the user gets instant visual feedback.
     setEmailConfidenceBar(0);
 
-    // --- NEW: Get prediction from Python ML service (port 5000) ---
+    // Ask the Python ML service for the phishing prediction.
     fetch('http://localhost:5000/predict_url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,13 +229,12 @@ function checkURL() {
     })
     .then(response => response.json())
     .then(prediction => {
-        // Changed from showing raw confidence only to computing one UI risk score.
+        // Convert the backend response into one normalized risk score for the UI.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
-        const riskStyle = applyRiskStyle(riskScore, resultDiv);
+        applyRiskStyle(riskScore, resultDiv);
        
-        // --- THE FETCH REQUEST (YOUR EXISTING CODE): This is the "bridge" to your Backend.
-        // It sends the URL to the '/api/check' route to save to MySQL.
+        // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
             method: 'POST', // We use POST because we are sending data
             headers: { 'Content-Type': 'application/json' },
@@ -196,26 +256,28 @@ function checkURL() {
         userUrl.value = "";
     })
     .catch(err => {
-        // ERROR HANDLING: Runs if the prediction service is down
+        // If the Python service is unavailable, show the error style instead of the default style.
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
-        resultDiv.style.color = '#7a1f1f';
+        setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
     
 }
 
-// ANALYZE EMAIL FUNCTION: This runs when the user clicks "Analyze Email"
+// ANALYZE EMAIL FUNCTION:
+// Same flow as URL checking, but it collects the four email fields,
+// sends them to the Python model, updates the shared risk card,
+// and then stores the submission through the Node backend.
 function analyzeEmail() {
-    // 1. Get the values from the email input fields
-    // Ensure these IDs match your index.html exactly!
+    // Get the values from the email input fields.
     const sender = document.getElementById('sender');
     const receiver = document.getElementById('receiver');
     const subject = document.getElementById('subject');
     const body_content = document.getElementById('email-body');
-    const resultDiv = document.getElementById('result'); // Or a separate result div
+    const resultDiv = document.getElementById('result');
 
-    // 2. Validation: ALL fields are now required (sender, receiver, subject, body)
+    // All four fields are required before the model is called.
     if (!sender.value.trim() || !receiver.value.trim() || !subject.value.trim() || !body_content.value.trim()) {
         alert("Please fill in all email fields: Sender, Receiver, Subject, and Body.");
         return;
@@ -223,10 +285,10 @@ function analyzeEmail() {
 
     // Added so the shared risk card appears inside the Email panel.
     mountRiskCard('email');
-    // Added so the bar appears immediately at 0 while we wait for the prediction response.
+    // Show the bar immediately so the user sees the email is being processed.
     setEmailConfidenceBar(0);
 
-    // --- NEW: Get prediction from Python ML service (port 5000) ---
+    // Ask the Python ML service for the email phishing prediction.
     fetch('http://localhost:5000/predict_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,12 +301,12 @@ function analyzeEmail() {
     })
     .then(response => response.json())
     .then(prediction => {
-        // Changed from showing raw confidence only to computing one UI risk score.
+        // Convert the model response into the shared UI risk score.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
-        const riskStyle = applyRiskStyle(riskScore, resultDiv);
+        applyRiskStyle(riskScore, resultDiv);
         
-        // 3. The Fetch Request (YOUR EXISTING CODE): Sending the data to your Node server for storage
+        // Store the analyzed email submission through the existing Node backend.
         fetch('/api/check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -267,16 +329,17 @@ function analyzeEmail() {
             // We don't overwrite the prediction result, just log the error
         });
 
-        // --- THIS CLEARS THE TEXT BOXES ---
+        // Clear the form once the prediction and storage calls finish.
         sender.value = "";
         receiver.value = "";
         subject.value = "";
         body_content.value = "";
     })
     .catch(err => {
+        // Put the result message into the error theme class if the prediction service fails.
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
-        resultDiv.style.color = '#7a1f1f';
+        setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
 }
@@ -284,11 +347,14 @@ function analyzeEmail() {
 /*
  * Feature: Checker Mode Switch
  * Toggles the visible panel (URL or Email) and active tab button.
+ * This also resets the result state so an old error or risk color does not linger
+ * when the user moves between checkers.
  */
 const modeButtons = document.querySelectorAll('.mode-btn');
 const panels = document.querySelectorAll('.panel');
 
 function setCheckerMode(mode) {
+    // Move the shared risk card to the selected panel first.
     mountRiskCard(mode);
     modeButtons.forEach((button) => {
         button.classList.toggle('is-active', button.dataset.mode === mode);
@@ -301,18 +367,24 @@ function setCheckerMode(mode) {
 
     const resultDiv = document.getElementById('result');
     if (resultDiv) {
-        resultDiv.style.color = '#14345d';
+        // Clear any previous direct risk color and return to the default theme-aware result style.
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'default');
         resultDiv.innerHTML = ""; 
     }
+
+    // Hide the risk bar until the next scan starts.
     hideEmailConfidenceBar();
 
 }
 
+// Hooks up click handlers for the URL/Email mode buttons on first load.
 function initializeCheckerModeSwitch() {
     if (!modeButtons.length || !panels.length) {
         return;
     }
 
+    // Start with the shared risk card mounted under the URL checker.
     mountRiskCard('url');
 
     modeButtons.forEach((button) => {
@@ -322,6 +394,8 @@ function initializeCheckerModeSwitch() {
     });
 }
 
+// Initialize theme handling first so the page colors are correct immediately.
+initializeThemeToggle();
 
-
+// Then initialize the checker panel tabs.
 initializeCheckerModeSwitch();
