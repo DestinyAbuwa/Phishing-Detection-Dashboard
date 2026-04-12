@@ -107,7 +107,13 @@ a{
 }
 
 #result{
-    color: #14345d;
+    color: #7a1f1f;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: bold;
+    min-height: 30px;
 }
 
 .checker-panels .panel{

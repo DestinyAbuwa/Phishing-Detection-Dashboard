@@ -146,9 +146,12 @@ function checkURL() {
     const resultDiv = document.getElementById('result');
     const url = userUrl.value.trim();
 
+    resultDiv.innerHTML = "";
+
+
     // Validation: Don't do anything if the input is empty
     if (!url) {
-        resultDiv.style.color = '#7a1f1f';
+        // resultDiv.style.color = '#7a1f1f';
         resultDiv.innerHTML = "Please paste a URL first!";
         return;
     }
@@ -220,9 +223,12 @@ function analyzeEmail() {
     const body_content = document.getElementById('email-body');
     const resultDiv = document.getElementById('result'); // Or a separate result div
 
+    resultDiv.innerHTML = "";
+
+
     // 2. Validation: ALL fields are now required (sender, receiver, subject, body)
     if (!sender.value.trim() || !receiver.value.trim() || !subject.value.trim() || !body_content.value.trim()) {
-        resultDiv.style.color = '#7a1f1f';
+
         resultDiv.innerHTML = "Please fill in all email fields: Sender, Receiver, Subject, and Body.";
         return;
     }
@@ -284,7 +290,6 @@ function analyzeEmail() {
     .catch(err => {
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
-        resultDiv.style.color = '#7a1f1f';
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
 }
@@ -309,7 +314,6 @@ function setCheckerMode(mode) {
 
     const resultDiv = document.getElementById('result');
     if (resultDiv) {
-        resultDiv.style.color = '#14345d';
         resultDiv.innerHTML = ""; 
     }
     hideEmailConfidenceBar();
