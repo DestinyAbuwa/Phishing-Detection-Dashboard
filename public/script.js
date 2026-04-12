@@ -190,6 +190,13 @@ function checkURL() {
         })
         .then(response => response.json()) // Wait for the server to send back a JSON response
         .then(data => {
+            
+            // If the server says redirect is true, send them to login
+            if (data.redirect) {
+                window.location.href = "login.html"; 
+                return;
+            }
+            
             // Keep the prediction message, but log the database save
             console.log("Submission ID from Database:", data.submissionId);
             // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
