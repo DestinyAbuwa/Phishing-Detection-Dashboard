@@ -137,3 +137,18 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+.vs/VSWorkspaceState.json
+.vs/slnx.sqlite
+.vs/ProjectSettings.json
+.vs/Phishing-Detection-Dashboard/v17/DocumentLayout.json
+.vs/Phishing-Detection-Dashboard/v17/DocumentLayout.backup.json
+.vs/Phishing-Detection-Dashboard/v17/.wsuo
+.vs/Phishing-Detection-Dashboard/FileContentIndex/cbeb73e5-d25d-452c-867a-7a437fbabb04.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/cbd4981f-58e6-4fce-9c0f-75162cd7fc6a.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/c4e158f6-5662-41b3-852c-d9bfee19516d.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/3b0a5d5c-2ed0-4405-8e80-6780fb84d8d1.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/2e561484-085f-4210-93ae-e397556c3f61.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/debac62d-4a16-4c7c-af77-f1e395477b32.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/c7fdad2f-ba21-4dad-822e-b9d31d8a773c.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/5a54abc5-736d-4a6c-9fc1-12a7eb48d592.vsidx
+.vs/Phishing-Detection-Dashboard/FileContentIndex/45952927-ee00-4ce1-8fc8-41f7c62813f6.vsidx
