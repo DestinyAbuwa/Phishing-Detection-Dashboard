@@ -148,7 +148,8 @@ function checkURL() {
 
     // Validation: Don't do anything if the input is empty
     if (!url) {
-        alert("Please paste a URL first!");
+        resultDiv.style.color = '#7a1f1f';
+        resultDiv.innerHTML = "Please paste a URL first!";
         return;
     }
     document.getElementById('testedUrlHeading').textContent = `Tested URL: ${url}`;
@@ -221,7 +222,8 @@ function analyzeEmail() {
 
     // 2. Validation: ALL fields are now required (sender, receiver, subject, body)
     if (!sender.value.trim() || !receiver.value.trim() || !subject.value.trim() || !body_content.value.trim()) {
-        alert("Please fill in all email fields: Sender, Receiver, Subject, and Body.");
+        resultDiv.style.color = '#7a1f1f';
+        resultDiv.innerHTML = "Please fill in all email fields: Sender, Receiver, Subject, and Body.";
         return;
     }
 
