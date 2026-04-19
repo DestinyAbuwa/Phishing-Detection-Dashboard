@@ -241,9 +241,11 @@ a {
 /* Shared result message box.
    Moved out of inline HTML styles so we can manage its color with theme-aware classes. */
 .result-message {
-    min-height: 24px;
+    min-height: 30px;
+    padding-top: 20px;
     padding-bottom: 20px;
     font-weight: bold;
+    font-size: 1.3rem;
     text-align: center;
 }
 

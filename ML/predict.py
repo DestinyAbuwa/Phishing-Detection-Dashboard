@@ -94,6 +94,11 @@ def predict_url():
 
     # --- Continue with normal ML prediction ---
     features = extract_url_features(url)  # your existing feature extraction
+
+
+    print(f"DEBUG: Features for {url} -> {features}")
+    
+
     X = np.array(features).reshape(1, -1)
     X_scaled = url_scaler.transform(X)
     pred = url_model.predict(X_scaled)[0]
