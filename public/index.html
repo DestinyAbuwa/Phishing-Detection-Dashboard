@@ -1,26 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Phishing Detection Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoPhish - Dashboard</title>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
 
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="loading-bar.css">
+
+    <style>
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            text-align: center;
+        }
+
+        /* Adjusting original login styles for the popup */
+        .modal-content h1 { margin-bottom: 20px; color: #333; }
+        .modal-content input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .hidden { display: none !important; }
+    </style>
 </head>
 
 <body data-theme="light">
+
+    <!-- START OF LOGIN CODE!!! -->
     <div class="menu-area">
         <a href="#" class="logo">NoPhish</a>
         <ul class="nav">
-        <li><a href="#home">Home</a></li>
+            <li><a href="#home">Home</a></li>
+            <!-- show "login" at the top if logged out, otherwise show vise versa -->
+            <li id="login-nav-item"><a href="javascript:void(0)" onclick="openLogin()">Login</a></li>
+            <li id="logout-nav-item" class="hidden"><a href="javascript:void(0)" onclick="logout()" style="color: #d9534f;">Logout</a></li>
         </ul>
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme">Dark mode</button>
     </div>
+
+    <!-- Popup -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeLogin()">&times;</span>
+            <h1>Login</h1>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()" style="width: 100%; padding: 10px; margin-top: 10px;">Login</button>
+            <div id="login-error" style="color: red; font-size: 14px; margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    
     <section class="hero-banner"></section>
+    
     <section id="home">
         <div class="mode-switch">
             <button type="button" class="mode-btn is-active" data-mode="url">URL Checker</button>
@@ -34,7 +102,6 @@
                 <h1>URL Checker</h1>
                 <input type="text" id="urlInput" placeholder="Paste link here...">
                 <button onclick="checkURL()">Scan Link</button>
-                
             </div>
 
             <form class="email-content panel panel-email">
@@ -45,14 +112,8 @@
                 <textarea id="email-body" placeholder="Email Body"></textarea>
                 <button type="button" onclick="analyzeEmail()">Analyze Email</button>
             </form>
+
             <div id="riskCard" class="risk-card" style="display: none;">
-                <!-- Custom ldBar wave:
-                     data-bbox = x y width height of the drawing area
-                     M20 90 = start point (x=20, y=90)
-                     Each Q uses: controlX controlY endX endY
-                     Q80 25 140 90 = curve up toward (80,25), then end at (140,90)
-                     Smaller controlY values go higher; larger ones go lower
-                     data-value = starting fill percentage before JS updates it -->
                 <h2 id="testedUrlHeading" class="tested-url-heading" style="display: none;">Tested URL:</h2>
                 <div id="emailConfidenceBar" class="ldBar label-center"
                     style="width: min(700px, 88vw); height: 130px; margin: 0 auto;"
@@ -67,22 +128,83 @@
                 <p id="riskLevelText" class="risk-level-text">Risk Level</p>
             </div>
         </div>
-
-        <div class="menu-area">
-    <div class="logo">PHISHGUARD</div>
-    <ul class="nav">
-        <li><a href="/">Home</a></li>
-        <li><a href="/logout" style="color: #d9534f;">Logout</a></li>
-    </ul>
-</div>
-        
-
     </section>
 
+    <!-- Scripts -->
     <script src="loading-bar.js"></script>
     <script src="script.js"></script>
 
-    
-    
+    <script>
+        const modal = document.getElementById('loginModal');
+        const loginError = document.getElementById('login-error');
+
+
+        function openLogin() {
+            modal.style.display = 'flex';
+        }
+
+        function closeLogin() {
+            modal.style.display = 'none';
+            loginError.innerText = ""; // Clear errors on close
+        }
+
+        // Close check depending on mouse click location 
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeLogin();
+            }
+        }
+
+
+        async function login() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success!
+                    closeLogin();
+                    // Swap Login button for Logout button in Nav
+                    document.getElementById('login-nav-item').classList.add('hidden');
+                    document.getElementById('logout-nav-item').classList.remove('hidden');
+                    alert("Logged in successfully!");
+                } else {
+                    loginError.innerText = data.error;
+                }
+            } catch (err) {
+                loginError.innerText = "Connection error.";
+            }
+        }
+
+        function logout() {
+
+            location.reload();
+        }
+
+
+        document.querySelectorAll('.mode-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('is-active'));
+                button.classList.add('is-active');
+                
+                const mode = button.getAttribute('data-mode');
+                if(mode === 'url') {
+                    document.querySelector('.panel-url').classList.add('active');
+                    document.querySelector('.panel-email').classList.remove('active');
+                } else {
+                    document.querySelector('.panel-url').classList.remove('active');
+                    document.querySelector('.panel-email').classList.add('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
