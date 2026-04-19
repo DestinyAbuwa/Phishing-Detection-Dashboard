@@ -30,12 +30,12 @@
         <div class="checker-panels">
             <div id="result" class="result-message result-default"></div>
 
-            <div class="Url panel panel-url active">
+            <form class="Url panel panel-url active" id="urlForm" onsubmit="event.preventDefault(); checkURL();">
                 <h1>URL Checker</h1>
                 <input type="text" id="urlInput" placeholder="Paste link here...">
-                <button onclick="checkURL()">Scan Link</button>
+                <button type="submit">Scan Link</button>
                 
-            </div>
+            </form>
 
             <form class="email-content panel panel-email">
                 <h1>Email Content Checker</h1>
