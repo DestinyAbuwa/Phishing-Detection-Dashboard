@@ -92,7 +92,8 @@ app.post('/api/check', (req, res) => {
         res.json({ 
             message: "Submission received and saved to database!",
             submissionId: result.insertId,
-            scanCount: req.session.scanCount // Send back the count just in case
+            //scanCount: req.session.scanCount // Send back the count just in case
+            //POSTPONED
         });
     });
 });
