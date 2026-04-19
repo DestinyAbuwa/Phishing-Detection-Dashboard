@@ -6,6 +6,17 @@ USE phishing_db;
 
 -- Delete the old version
 DROP TABLE IF EXISTS submissions;
+DROP TABLE IF EXISTS users;
+
+
+-- USERS TABLE (Stores USERS login info)
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL, -- "password" from your request
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- SUBMISSIONS TABLE (Stores URLs scanned by the team)
 CREATE TABLE submissions (
