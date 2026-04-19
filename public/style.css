@@ -1,107 +1,273 @@
-body{
+/* root defines light mode to be the default color */
+
+/* Light theme tokens.
+   These are the default colors the whole page uses unless dark mode overrides them below. */
+:root {
+    /* Page background behind the hero image and cards. */
+    --page-background: #f6f8fb;
+    /* Main card background for the URL and Email panels. */
+    --card-background: rgba(255, 255, 255, 0.84);
+    /* Stronger nav background so the fixed header stays readable over the banner. */
+    --navbar-background: rgba(255, 255, 255, 0.92);
+    /* Soft panel used behind the URL/Email mode switch pills. */
+    --mode-switch-background: rgba(255, 255, 255, 0.75);
+    /* Main heading and body text color. */
+    --main-text-color: #10243e;
+    /* Secondary text color for tabs, helper text, and default results. */
+    --secondary-text-color: #14345d;
+    /* Text color that sits on top of the primary blue button. */
+    --button-text-color: #ffffff;
+    /* Link color in the top nav. */
+    --link-color: #10243e;
+    /* Input borders and subtle UI outlines. */
+    --input-border-color: #c7d3df;
+    /* Divider line above the risk card. */
+    --section-divider-color: rgba(199, 211, 223, 0.85);
+    /* Main accent color used for buttons and the active checker tab. */
+    --button-background: #1358f5;
+    /* Hover state for the main accent button. */
+    --button-hover-background: #0f46c2;
+    /* Fixed nav shadow so it separates from the banner. */
+    --navbar-shadow: 0 1px 0 rgba(10, 24, 42, 0.08);
+    /* Card shadow for the main checker panels. */
+    --card-shadow: 0 12px 30px rgba(10, 24, 42, 0.16);
+    /* Shadow for the pill switch above the panels. */
+    --mode-switch-shadow: 0 8px 20px rgba(42, 10, 10, 0.14);
+    /* Input and textarea fill color. */
+    --input-background: rgba(255, 255, 255, 0.96);
+    /* Error color used when a service call fails. */
+    --error-text-color: #b42318;
+    /* Banner overlay tint that slightly darkens the hero image. */
+    --banner-overlay-color: rgba(8, 16, 28, 0.08);
+}
+
+/* Dark theme overrides.
+   When JS sets body[data-theme="dark"], every component that uses the variables above
+   automatically swaps to these darker values. */
+body[data-theme="dark"] {
+    /* Dark page background. */
+    --page-background: #0b1220;
+    /* Dark card background so the panels stand out from the page. */
+    --card-background: rgba(18, 27, 40, 0.9);
+    /* Dark fixed-header background. */
+    --navbar-background: rgba(11, 18, 32, 0.94);
+    /* Dark pill background for the mode switcher. */
+    --mode-switch-background: rgba(18, 27, 40, 0.82);
+    /* Main text becomes light for contrast on dark surfaces. */
+    --main-text-color: #edf4ff;
+    /* Secondary text becomes a softer blue-gray. */
+    --secondary-text-color: #bfd0e8;
+    /* Button text stays bright enough over the new blue accent. */
+    --button-text-color: #f8fbff;
+    /* Nav links also shift to a light color. */
+    --link-color: #edf4ff;
+    /* Borders become darker blue-gray instead of pale gray. */
+    --input-border-color: #3a4b61;
+    /* Divider line for the risk card in dark mode. */
+    --section-divider-color: rgba(58, 75, 97, 0.95);
+    /* Slightly lighter accent blue that reads better on dark backgrounds. */
+    --button-background: #5f8fff;
+    /* Hover state for the dark-mode accent button. */
+    --button-hover-background: #7ca4ff;
+    /* Softer nav shadow suited for a dark UI. */
+    --navbar-shadow: 0 1px 0 rgba(148, 163, 184, 0.12);
+    /* Deeper panel shadow so cards still feel elevated in dark mode. */
+    --card-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+    /* Stronger shadow under the mode switch pill. */
+    --mode-switch-shadow: 0 12px 28px rgba(2, 6, 23, 0.35);
+    /* Darker input fill so fields blend with the theme but stay distinct. */
+    --input-background: rgba(11, 18, 32, 0.88);
+    /* Lighter red for errors so it remains readable on dark backgrounds. */
+    --error-text-color: #ff8a80;
+    /* Stronger dark overlay so the hero image does not feel too bright in dark mode. */
+    --banner-overlay-color: rgba(3, 8, 18, 0.5);
+}
+
+/* Global page styles.
+   The important change here is that the page now reads from CSS variables,
+   which is what makes the theme switch work everywhere at once. */
+body {
     margin: 0;
     padding: 0;
-    font-family: montserrat;
+    font-family: "Inter", sans-serif;
+    background-color: var(--page-background);
+    color: var(--main-text-color);
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
-.menu-area{
-    font-family: "Google Sans", sans-serif;
+
+/* Fixed top navigation bar.
+   It uses the stronger surface color so it stays readable over the image banner. */
+.menu-area {
+    font-family: "Inter", sans-serif;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    display:flex;
+    display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction:row;
-    flex-wrap:wrap;
-    background-color:rgba(224,228,231,0.2);
-    z-index:1;
-    
-    
-
+    flex-direction: row;
+    flex-wrap: wrap;
+    background-color: var(--navbar-background);
+    box-shadow: var(--navbar-shadow);
+    backdrop-filter: blur(14px);
+    z-index: 10;
 }
 
-.nav{
-    display:flex;
-    font-family: "Poppins", sans-serif;
+/* The nav list that holds the "Home" link. */
+.nav {
+    display: flex;
+    font-family: "Inter", sans-serif;
     justify-content: right;
-    list-style:none ;
-    margin-right: 15%;
+    list-style: none;
+    margin-right: 4%;
     font-weight: bold;
-
+    padding: 0;
 }
 
-.logo{
+/* Brand/logo text on the left side of the header. */
+.logo {
     flex: 1 1 auto;
     margin-left: 10%;
-    
-    letter-spacing:1px;
+    letter-spacing: 1px;
     font-weight: bold;
     font-size: 25px;
-    
+}
 
-}
-a{
-    margin:15px;
-    color: #000;
+/* Shared anchor styling for the logo and nav link. */
+a {
+    margin: 15px;
+    color: var(--link-color);
     text-decoration: none;
-   
 }
-#home{
-    
+
+/* New theme toggle button.
+   This sits in the header and changes appearance automatically with the theme variables. */
+.theme-toggle {
+    margin-right: 10%;
+    border: 1px solid var(--input-border-color);
+    border-radius: 999px;
+    padding: 10px 16px;
+    background: var(--card-background);
+    color: var(--main-text-color);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Small hover lift to make the toggle feel clickable. */
+.theme-toggle:hover {
+    transform: translateY(-1px);
+}
+
+/* Hero image section at the top of the page. */
+.hero-banner {
     position: relative;
-    font-family: "Poppins", sans-serif;
-    padding-top: 100px;
+    margin-top: 68px;
     width: 100%;
-    min-height: 100vh;
+    height: 360px;
+    background-image: url("./images/fish.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+}
+
+/* Overlay on top of the hero image.
+   This is especially useful in dark mode because it tones down the bright photo. */
+.hero-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(7, 14, 28, 0.02) 0%, var(--banner-overlay-color) 100%);
+}
+
+/* Main layout wrapper for the checker UI. */
+#home {
+    position: relative;
+    font-family: "Inter", sans-serif;
+    margin-top: -120px;
+    padding: 0 0 72px;
+    width: 100%;
+    min-height: calc(100vh - 428px);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 48px;
-    background-image: url("./images/backround2.jpg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center center;
+    background: transparent;
     text-align: center;
-
+    z-index: 2;
 }
 
-.mode-switch{
+/* URL/Email mode pill container.
+   The only real theme change here is the background and shadow now come from variables. */
+.mode-switch {
     display: inline-flex;
     gap: 10px;
     padding: 10px;
     border-radius: 999px;
-    background-color: rgba(255, 255, 255, 0.75);
-    box-shadow: 0 8px 20px rgba(10, 24, 42, 0.14);
+    background-color: var(--mode-switch-background);
+    box-shadow: var(--mode-switch-shadow);
+    position: relative;
+    top: -200px;
 }
 
-.mode-btn{
+/* Individual pill buttons for URL Checker and Email Checker. */
+.mode-btn {
     border: 0;
     border-radius: 999px;
     padding: 10px 18px;
     font-size: 14px;
     font-weight: 600;
     background: transparent;
-    color: #14345d;
+    color: var(--secondary-text-color);
     cursor: pointer;
     transition: 0.2s ease;
 }
 
-.mode-btn.is-active{
-    background-color: #1358f5;
-    color: #fff;
+/* Active pill styling.
+   This uses the shared primary color so it updates in light and dark mode automatically. */
+.mode-btn.is-active {
+    background-color: var(--button-background);
+    color: var(--button-text-color);
 }
 
-.checker-panels{
+/* Wrapper around the result message, panels, and risk card. */
+.checker-panels {
     width: 100%;
+    padding-top: 8px;
 }
 
-.checker-panels .panel{
+/* Shared result message box.
+   Moved out of inline HTML styles so we can manage its color with theme-aware classes. */
+.result-message {
+    min-height: 30px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-weight: bold;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+/* Default result state for neutral messages. */
+.result-default {
+    color: var(--secondary-text-color);
+}
+
+/* Error result state used when the backend/prediction service fails. */
+.result-error {
+    color: var(--error-text-color);
+}
+
+/* All panels are hidden by default until JS marks the active one. */
+.checker-panels .panel {
     display: none;
 }
 
+/* Shared card styles for both checker panels.
+   The big theme-related change is that background, text, and shadow all use variables now. */
 .Url,
-.email-content{
+.email-content {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -110,54 +276,137 @@ a{
     margin: 0 auto;
     padding: 28px;
     border-radius: 14px;
-    background-color: rgba(255, 255, 255, 0.84);
-    box-shadow: 0 12px 30px rgba(10, 24, 42, 0.16);
+    background-color: var(--card-background);
+    box-shadow: var(--card-shadow);
+    color: var(--main-text-color);
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Panel headings now read from the theme text color. */
 .Url h1,
-.email-content h1{
+.email-content h1 {
     font-size: 34px;
     margin: 0 0 8px;
-    color: #10243e;
+    color: var(--main-text-color);
     text-align: left;
 }
 
+/* Shared input field styling.
+   Inputs now switch their border, fill, and text color with the theme. */
 .Url input,
 .email-content input,
-.email-content textarea{
+.email-content textarea {
     font-family: "Poppins", sans-serif;
     width: 100%;
-    border: 1px solid #c7d3df;
+    border: 1px solid var(--input-border-color);
     border-radius: 10px;
     padding: 12px 14px;
     font-size: 16px;
     box-sizing: border-box;
+    background-color: var(--input-background);
+    color: var(--main-text-color);
 }
 
-.email-content textarea{
-    
+/* Placeholder color also changes with the active theme. */
+.Url input::placeholder,
+.email-content input::placeholder,
+.email-content textarea::placeholder {
+    color: var(--secondary-text-color);
+    opacity: 0.8;
+}
+
+/* Email body box sizing only. */
+.email-content textarea {
     min-height: 160px;
     resize: vertical;
 }
 
+/* Shared CTA buttons for scan/analyze actions. */
 .Url button,
-.email-content button{
+.email-content button {
     align-self: flex-end;
     border: 0;
     border-radius: 10px;
     padding: 12px 18px;
-    background-color: #1358f5;
-    color: #fff;
+    background-color: var(--button-background);
+    color: var(--button-text-color);
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
 }
 
+/* Button hover color comes from the theme accent hover token. */
 .Url button:hover,
-.email-content button:hover{
-    background-color: #0f46c2;
+.email-content button:hover {
+    background-color: var(--button-hover-background);
 }
 
-.checker-panels .panel.active{
+/* JS adds .active to the selected checker panel. */
+.checker-panels .panel.active {
     display: flex;
+}
+
+/* Risk meter container under the active panel. */
+.risk-card {
+    width: 100%;
+    margin: 8px 0 0;
+    padding: 14px 0 4px;
+    border-top: 1px solid var(--section-divider-color);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+/* Risk label text under the wave bar. */
+.risk-level-text {
+    margin: 8px 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--secondary-text-color);
+    text-align: center;
+    letter-spacing: 0.2px;
+}
+
+/* Heading that shows the tested URL in URL mode only. */
+.tested-url-heading {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--main-text-color);
+    text-align: center;
+}
+
+/* Small-screen layout adjustments so the nav and cards still fit comfortably on mobile. */
+@media (max-width: 720px) {
+    /* Lets the logo and theme toggle sit more naturally on smaller widths. */
+    .menu-area {
+        justify-content: space-between;
+        padding: 0 20px;
+    }
+
+    /* Removes the large desktop margins in mobile view. */
+    .logo,
+    .theme-toggle {
+        margin: 12px 0;
+    }
+
+    /* Moves the nav onto its own centered row. */
+    .nav {
+        width: 100%;
+        justify-content: center;
+        margin: 0 0 10px;
+    }
+
+    /* Pulls the mode switch up a little less on smaller screens. */
+    .mode-switch {
+        top: -160px;
+    }
+
+    /* Slightly tighter card width and padding for mobile. */
+    .Url,
+    .email-content {
+        width: min(92%, 680px);
+        padding: 22px;
+    }
 }

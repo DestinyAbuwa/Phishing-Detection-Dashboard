@@ -1,26 +1,66 @@
 # Phishing-Detection-Dashboard
+This dashboard uses Machine Learning to analyze URLs and Emails for phishing threats, storing scan history in a MySQL database.
 
-## Project Setup & Installation
-Follow these steps to run the project locally for development.
+## Project Architecture
 
-### Prerequisites
-* **Node.js**: (v16 or higher recommended)
-* **Git**: For version control
+  * **Frontend:** HTML/CSS/JavaScript
+  * **Backend:** Node.js & Express (Port 3000)
+  * **ML Service:** Python & Flask (Port 5000)
+  * **Database:** MySQL
 
-### Installation Steps
-1. **Clone the repository:**
-   `git clone https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard.git`
-2. **Install Dependencies:**
-   Run this command in the root folder to install Express and other required packages:
-   `npm install`
+## Prerequisites
 
-### How to Run Locally
-1. Start the server by running:
-   `node index.js`
-2. Open your browser and navigate to:
-   `http://localhost:3000`
+  * **Node.js**: (v16 or higher)
+  * **Python**: (v3.9 or higher)
+  * **MySQL**: Local instance running
+  * **Git**: For version control
 
-## Planned Features (Iteration 2)
-* **Backend:** Node.js/Express server (Initialized)
-* **Frontend:** Basic HTML/CSS/JS structure (Initialized)
-* **Database:** SQL Schema for URL Blacklisting (In Progress)
+## Installation Steps
+
+### 1\. Clone & Core Dependencies
+
+```bash
+git clone https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard.git
+npm install
+```
+
+### 2\. Machine Learning Setup
+
+Navigate to the [ML folder](https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard/tree/main/ML) to install Python dependencies.
+
+> **Note:** If `pip` is not recognized, use `py -m pip`.
+
+```bash
+cd ML
+py -m pip install flask flask-cors joblib numpy scipy scikit-learn
+```
+### 3\. Database Setup
+
+Initialize the database by running the queries found in [schema.sql](https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard/tree/main/schema.sql) in your MySQL workbench.
+
+## How to Run Locally
+
+To run the full application, you must have **two terminals** open simultaneously.
+
+### Terminal 1: Node.js Server
+
+```bash
+node index.js
+```
+
+*Runs on [http://localhost:3000](http://localhost:3000)*
+
+### Terminal 2: Python ML Service
+
+```bash
+cd ML
+py predict.py
+```
+
+## Planned Features (Iteration 3)
+* ### Implement Login Page
+* ### Store Logins in Database
+* ### Risk Score
+* ### Error Messages
+* ### Connect ML Results to Backend
+* ### Dark Mode-Light Mode Toggle
