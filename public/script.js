@@ -210,7 +210,8 @@ function checkURL() {
 
     // Validation: Don't do anything if the input is empty
     if (!url) {
-        // resultDiv.style.color = '#7a1f1f';
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "Please paste a URL first!";
         return;
     }
@@ -277,6 +278,7 @@ function checkURL() {
         // If the Python service is unavailable, show the error style instead of the default style.
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
+        resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
@@ -300,7 +302,8 @@ function analyzeEmail() {
     // 2. Validation: ALL fields are now required (sender, receiver, subject, body)
     // All four fields are required before the model is called.
     if (!sender.value.trim() || !receiver.value.trim() || !subject.value.trim() || !body_content.value.trim()) {
-
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "Please fill in all email fields: Sender, Receiver, Subject, and Body.";
         return;
     }
@@ -363,6 +366,7 @@ function analyzeEmail() {
         // Put the result message into the error theme class if the prediction service fails.
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
+        resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
