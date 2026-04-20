@@ -3,6 +3,12 @@ const emailConfidenceBarElement = document.getElementById('emailConfidenceBar');
 const riskCardElement = document.getElementById('riskCard');
 const riskLevelTextElement = document.getElementById('riskLevelText');
 const themeToggleButton = document.getElementById('themeToggle');
+const urlLastToggleElement = document.getElementById('urlLastToggle');
+const urlLastDetailsElement = document.getElementById('urlLastDetails');
+const urlLastContentElement = document.getElementById('urlLastContent');
+const emailLastToggleElement = document.getElementById('emailLastToggle');
+const emailLastDetailsElement = document.getElementById('emailLastDetails');
+const emailLastContentElement = document.getElementById('emailLastContent');
 // This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
 // Risk labels and colors for the shared wave bar.
@@ -24,6 +30,95 @@ const RISK_STYLES = {
         trailColor: '#e7bcbc'
     }
 };
+let lastUrlSubmission = null;
+let lastEmailSubmission = null;
+
+function createLastSubmissionItem(label, value, multiline = false) {
+    const detailItem = document.createElement('div');
+    detailItem.className = 'last-submission-item';
+
+    const detailLabel = document.createElement('span');
+    detailLabel.className = 'last-submission-item-label';
+    detailLabel.textContent = label;
+
+    const detailValue = document.createElement('p');
+    detailValue.className = `last-submission-item-value${multiline ? ' is-multiline' : ''}`;
+    detailValue.textContent = value;
+
+    detailItem.appendChild(detailLabel);
+    detailItem.appendChild(detailValue);
+    return detailItem;
+}
+
+function getLastSubmissionElements(mode) {
+    if (mode === 'url') {
+        return {
+            toggleElement: urlLastToggleElement,
+            detailsElement: urlLastDetailsElement,
+            contentElement: urlLastContentElement
+        };
+    }
+
+    return {
+        toggleElement: emailLastToggleElement,
+        detailsElement: emailLastDetailsElement,
+        contentElement: emailLastContentElement
+    };
+}
+
+function renderLastSubmission(mode) {
+    const { toggleElement, detailsElement, contentElement } = getLastSubmissionElements(mode);
+    const submission = mode === 'url' ? lastUrlSubmission : lastEmailSubmission;
+
+    if (!toggleElement || !detailsElement || !contentElement) {
+        return;
+    }
+
+    if (!submission) {
+        toggleElement.hidden = true;
+        toggleElement.setAttribute('aria-expanded', 'false');
+        detailsElement.hidden = true;
+        contentElement.innerHTML = '';
+        return;
+    }
+
+    toggleElement.hidden = false;
+    detailsElement.hidden = true;
+    toggleElement.setAttribute('aria-expanded', 'false');
+    contentElement.innerHTML = '';
+
+    if (mode === 'url') {
+        contentElement.textContent = submission.url;
+        return;
+    }
+
+    contentElement.appendChild(createLastSubmissionItem('Sender', submission.sender));
+    contentElement.appendChild(createLastSubmissionItem('Receiver', submission.receiver));
+    contentElement.appendChild(createLastSubmissionItem('Subject', submission.subject));
+    contentElement.appendChild(createLastSubmissionItem('Email body', submission.body_content, true));
+}
+
+function toggleLastSubmission(mode) {
+    const { toggleElement, detailsElement } = getLastSubmissionElements(mode);
+
+    if (!toggleElement || !detailsElement || toggleElement.hidden) {
+        return;
+    }
+
+    const isExpanded = toggleElement.getAttribute('aria-expanded') === 'true';
+    toggleElement.setAttribute('aria-expanded', String(!isExpanded));
+    detailsElement.hidden = isExpanded;
+}
+
+function setLastSubmission(mode, submission) {
+    if (mode === 'url') {
+        lastUrlSubmission = submission;
+    } else {
+        lastEmailSubmission = submission;
+    }
+
+    renderLastSubmission(mode);
+}
 
 // Switches the result message between the neutral/default style and the error style.
 function setResultState(resultDiv, state) {
@@ -211,8 +306,6 @@ function checkURL() {
         return;
     }
 
-    // Update the shared heading so the risk card shows which URL was just tested.
-    document.getElementById('testedUrlHeading').textContent = `Tested URL: ${url}`;
 
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
@@ -233,6 +326,7 @@ function checkURL() {
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        setLastSubmission('url', { url });
        
         // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
@@ -305,6 +399,12 @@ function analyzeEmail() {
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        setLastSubmission('email', {
+            sender: sender.value,
+            receiver: receiver.value,
+            subject: subject.value,
+            body_content: body_content.value
+        });
         
         // Store the analyzed email submission through the existing Node backend.
         fetch('/api/check', {
@@ -394,8 +494,25 @@ function initializeCheckerModeSwitch() {
     });
 }
 
+function initializeLastSubmissionToggles() {
+    if (urlLastToggleElement) {
+        urlLastToggleElement.addEventListener('click', () => {
+            toggleLastSubmission('url');
+        });
+    }
+
+    if (emailLastToggleElement) {
+        emailLastToggleElement.addEventListener('click', () => {
+            toggleLastSubmission('email');
+        });
+    }
+}
+
 // Initialize theme handling first so the page colors are correct immediately.
 initializeThemeToggle();
 
 // Then initialize the checker panel tabs.
 initializeCheckerModeSwitch();
+
+// Finally, wire up the small "last submission" toggles inside each panel.
+initializeLastSubmissionToggles();

@@ -33,7 +33,14 @@
             <div class="Url panel panel-url active">
                 <h1>URL Checker</h1>
                 <input type="text" id="urlInput" placeholder="Paste link here...">
-                <button onclick="checkURL()">Scan Link</button>
+                <div class="panel-actions">
+                    <button onclick="checkURL()">Scan Link</button>
+                    <button id="urlLastToggle" class="last-submission-toggle" type="button" hidden aria-expanded="false" aria-controls="urlLastDetails" aria-label="Show last tested URL">&#9662;</button>
+                </div>
+                <div id="urlLastDetails" class="last-submission-details" hidden>
+                    <p class="last-submission-title">Last tested URL</p>
+                    <p id="urlLastContent" class="last-submission-content"></p>
+                </div>
                 
             </div>
 
@@ -43,7 +50,14 @@
                 <input type="email" id="receiver" placeholder="Receiver Email">
                 <input type="text" id="subject" placeholder="Subject">
                 <textarea id="email-body" placeholder="Email Body"></textarea>
-                <button type="button" onclick="analyzeEmail()">Analyze Email</button>
+                <div class="panel-actions">
+                    <button type="button" onclick="analyzeEmail()">Analyze Email</button>
+                    <button id="emailLastToggle" class="last-submission-toggle" type="button" hidden aria-expanded="false" aria-controls="emailLastDetails" aria-label="Show last tested email">&#9662;</button>
+                </div>
+                <div id="emailLastDetails" class="last-submission-details" hidden>
+                    <p class="last-submission-title">Last tested email</p>
+                    <div id="emailLastContent" class="last-submission-content"></div>
+                </div>
             </form>
             <div id="riskCard" class="risk-card" style="display: none;">
                 <!-- Custom ldBar wave:
@@ -53,7 +67,6 @@
                      Q80 25 140 90 = curve up toward (80,25), then end at (140,90)
                      Smaller controlY values go higher; larger ones go lower
                      data-value = starting fill percentage before JS updates it -->
-                <h2 id="testedUrlHeading" class="tested-url-heading" style="display: none;">Tested URL:</h2>
                 <div id="emailConfidenceBar" class="ldBar label-center"
                     style="width: min(700px, 88vw); height: 130px; margin: 0 auto;"
                     data-stroke="data:ldbar/res,gradient(0,1,#9df,#9fd,#df9,#fd9)"

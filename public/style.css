@@ -238,6 +238,82 @@ a {
     padding-top: 8px;
 }
 
+/* Keeps the main action button and the small dropdown toggle on one row. */
+.panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Small arrow button that appears after a successful submission. */
+.last-submission-toggle {
+    min-width: 44px;
+    align-self: flex-end;
+    border: 1px solid var(--input-border-color);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background-color: var(--input-background);
+    color: var(--secondary-text-color);
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Rotates the arrow upward when the last-submission details are open. */
+.last-submission-toggle[aria-expanded="true"] {
+    transform: rotate(180deg);
+}
+
+/* Compact dropdown area for the last submitted URL or email details. */
+.last-submission-details {
+    padding-top: 6px;
+    border-top: 1px solid var(--section-divider-color);
+}
+
+/* Label above the last submitted content. */
+.last-submission-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--secondary-text-color);
+    text-align: left;
+}
+
+/* Shared container for the last submission content. */
+.last-submission-content {
+    display: grid;
+    gap: 10px;
+    text-align: left;
+    color: var(--main-text-color);
+}
+
+/* Simple field row for the last submitted email details. */
+.last-submission-item {
+    display: grid;
+    gap: 4px;
+}
+
+/* Field labels inside the last submitted email details. */
+.last-submission-item-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+}
+
+/* Values inside the last submission details. */
+.last-submission-item-value {
+    margin: 0;
+    word-break: break-word;
+}
+
+/* Preserves line breaks for the last submitted email body. */
+.last-submission-item-value.is-multiline {
+    white-space: pre-wrap;
+}
+
 /* Shared result message box.
    Moved out of inline HTML styles so we can manage its color with theme-aware classes. */
 .result-message {
