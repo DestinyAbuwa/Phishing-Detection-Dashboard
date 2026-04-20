@@ -342,6 +342,7 @@ a {
    The big theme-related change is that background, text, and shadow all use variables now. */
 .Url,
 .email-content {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -354,6 +355,46 @@ a {
     box-shadow: var(--card-shadow);
     color: var(--main-text-color);
     transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+/* Thin indeterminate progress bar at the top of the active checker card. */
+.scan-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--input-border-color);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.scan-loader.is-loading {
+    opacity: 1;
+}
+
+/* The traveling shimmer that sweeps across the track. */
+.scan-loader::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--button-background), transparent);
+}
+
+/* Only animate when actively loading so the shimmer always starts from the left. */
+.scan-loader.is-loading::after {
+    animation: scan-sweep 1.3s ease-in-out infinite;
+}
+
+@keyframes scan-sweep {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
 }
 
 /* Panel headings now read from the theme text color. */

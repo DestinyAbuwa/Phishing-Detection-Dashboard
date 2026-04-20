@@ -33,6 +33,24 @@ const RISK_STYLES = {
 let lastUrlSubmission = null;
 let lastEmailSubmission = null;
 
+function showLoader(loaderId) {
+    const loaderElement = document.getElementById(loaderId);
+    if (!loaderElement) {
+        return;
+    }
+
+    loaderElement.classList.add('is-loading');
+}
+
+function hideLoader(loaderId) {
+    const loaderElement = document.getElementById(loaderId);
+    if (!loaderElement) {
+        return;
+    }
+
+    loaderElement.classList.remove('is-loading');
+}
+
 function createLastSubmissionItem(label, value, multiline = false) {
     const detailItem = document.createElement('div');
     detailItem.className = 'last-submission-item';
@@ -83,8 +101,8 @@ function renderLastSubmission(mode) {
     }
 
     toggleElement.hidden = false;
-    detailsElement.hidden = true;
     toggleElement.setAttribute('aria-expanded', 'false');
+    detailsElement.hidden = true;
     contentElement.innerHTML = '';
 
     if (mode === 'url') {
@@ -310,18 +328,21 @@ function checkURL() {
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
-    
-    // Show the risk bar immediately at 0 so the user gets instant visual feedback.
-    setEmailConfidenceBar(0);
+    hideEmailConfidenceBar();
+    showLoader('urlLoader');
 
     // Ask the Python ML service for the phishing prediction.
-    fetch('http://localhost:5000/predict_url', {
+    // Promise.all ensures the loader shows for at least 700ms regardless of fetch speed.
+    const urlFetch = fetch('http://localhost:5000/predict_url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })
-    })
-    .then(response => response.json())
-    .then(prediction => {
+    }).then(response => response.json());
+
+    
+    Promise.all([urlFetch, new Promise(resolve => setTimeout(resolve, 700))])
+    .then(([prediction]) => {
+        hideLoader('urlLoader');
         // Convert the backend response into one normalized risk score for the UI.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
@@ -330,20 +351,16 @@ function checkURL() {
        
         // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
-            method: 'POST', // We use POST because we are sending data
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url }) // Convert the URL into a JSON string
+            body: JSON.stringify({ url: url })
         })
-        .then(response => response.json()) // Wait for the server to send back a JSON response
+        .then(response => response.json())
         .then(data => {
-            // Keep the prediction message, but log the database save
             console.log("Submission ID from Database:", data.submissionId);
-            // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
         })
         .catch(err => {
-            // ERROR HANDLING: Runs if the database save fails
             console.error("Storage Error:", err);
-            // We don't overwrite the prediction result, just log the error
         });
 
         // Clear the input field
@@ -352,6 +369,7 @@ function checkURL() {
     .catch(err => {
         // If the Python service is unavailable, show the error style instead of the default style.
         console.error("Prediction error:", err);
+        hideLoader('urlLoader');
         hideEmailConfidenceBar();
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
@@ -379,11 +397,12 @@ function analyzeEmail() {
 
     // Added so the shared risk card appears inside the Email panel.
     mountRiskCard('email');
-    // Show the bar immediately so the user sees the email is being processed.
-    setEmailConfidenceBar(0);
+    hideEmailConfidenceBar();
+    showLoader('emailLoader');
 
     // Ask the Python ML service for the email phishing prediction.
-    fetch('http://localhost:5000/predict_email', {
+    // Promise.all ensures the loader shows for at least 700ms regardless of fetch speed.
+    const emailFetch = fetch('http://localhost:5000/predict_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -392,9 +411,11 @@ function analyzeEmail() {
             subject: subject.value,
             body_content: body_content.value
         })
-    })
-    .then(response => response.json())
-    .then(prediction => {
+    }).then(response => response.json());
+
+    Promise.all([emailFetch, new Promise(resolve => setTimeout(resolve, 700))])
+    .then(([prediction]) => {
+        hideLoader('emailLoader');
         // Convert the model response into the shared UI risk score.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
@@ -411,7 +432,7 @@ function analyzeEmail() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                url: "", // Since this is an email, the URL can be empty
+                url: "",
                 sender: sender.value,
                 receiver: receiver.value,
                 subject: subject.value,
@@ -420,13 +441,10 @@ function analyzeEmail() {
         })
         .then(response => response.json())
         .then(data => {
-            // Keep the prediction message, but log the database save
             console.log("Database ID:", data.submissionId);
-            // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
         })
         .catch(err => {
             console.error("Email Submission Error:", err);
-            // We don't overwrite the prediction result, just log the error
         });
 
         // Clear the form once the prediction and storage calls finish.
@@ -438,6 +456,7 @@ function analyzeEmail() {
     .catch(err => {
         // Put the result message into the error theme class if the prediction service fails.
         console.error("Prediction error:", err);
+        hideLoader('emailLoader');
         hideEmailConfidenceBar();
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
