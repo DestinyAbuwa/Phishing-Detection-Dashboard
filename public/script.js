@@ -527,6 +527,48 @@ function initializeLastSubmissionToggles() {
     }
 }
 
+// Parallax the fish image inside the fixed hero as the user scrolls.
+// The hero itself is fixed — the content layer slides up over it.
+// The image drifts upward slower than the content, with a slight zoom for depth.
+function initHeroScroll() {
+    const heroImg = document.querySelector('.hero-img');
+    const hero = document.querySelector('.hero-banner');
+    const scrollCue = document.querySelector('.scroll-cue');
+    if (!heroImg || !hero) return;
+
+    let ticking = false;
+    let lastY = 0;
+
+    function update() {
+        const vh = window.innerHeight;
+        const progress = Math.min(lastY / vh, 1);
+
+        // Classic parallax: image drifts up at 0.5x scroll speed
+        const translateY = -lastY * 0.5;
+        // Subtle zoom as user scrolls — adds cinematic depth
+        const scale = 1 + progress * 0.08;
+
+        heroImg.style.transform = `translate3d(0, ${translateY}px, 0) scale(${scale})`;
+        // Hero fades slightly as the content layer covers it — softens the transition
+        hero.style.opacity = String(1 - progress * 0.35);
+
+        // Fade scroll cue out quickly once the user starts scrolling
+        if (scrollCue) {
+            scrollCue.style.opacity = String(Math.max(0, 1 - lastY / 120));
+        }
+
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        lastY = window.scrollY;
+        if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
 // Initialize theme handling first so the page colors are correct immediately.
 initializeThemeToggle();
 
@@ -535,3 +577,6 @@ initializeCheckerModeSwitch();
 
 // Finally, wire up the small "last submission" toggles inside each panel.
 initializeLastSubmissionToggles();
+
+// Hero scroll-shrink animation.
+initHeroScroll();

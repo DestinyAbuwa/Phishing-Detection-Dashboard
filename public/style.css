@@ -72,6 +72,8 @@ a { text-decoration: none; color: inherit; }
     border-bottom: 1px solid var(--navbar-border-color);
     z-index: 100;
     transition: background-color var(--transition);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .logo {
@@ -132,24 +134,43 @@ a { text-decoration: none; color: inherit; }
     border-color: var(--accent);
 }
 
-/* ── Hero banner ── */
+/* ── Hero banner — fixed behind the sliding content layer ── */
 .hero-banner {
-    margin: var(--nav-height) 12px 0;
-    width: calc(100% - 24px);
-    height: 320px;
-    position: relative;
+    position: fixed;
+    top: var(--nav-height);
+    left: 12px;
+    right: 12px;
+    height: calc(100vh - var(--nav-height));
     overflow: hidden;
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(15, 30, 80, 0.14);
+    z-index: 0;
 }
 
-.hero-banner::before {
-    content: "";
+/* ── Content layer — slides up over the fixed hero on scroll ── */
+.page-content {
+    position: relative;
+    z-index: 2;
+    background: var(--page-background);
+    margin-top: 100vh;
+    min-height: 100vh;
+    padding-bottom: 8vh;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.12);
+    transition: background-color var(--transition);
+    overflow: hidden;
+}
+
+/* Fish image — oversized so it can parallax up without showing edges */
+.hero-img {
     position: absolute;
-    inset: 0;
+    top: 0; left: 0; right: 0;
+    height: 160%;
     background-image: url("./images/fish.jpg");
     background-size: cover;
-    background-position: center;
+    background-position: center top;
+    will-change: transform;
+    transform-origin: center top;
 }
 
 .hero-banner::after {
@@ -157,25 +178,109 @@ a { text-decoration: none; color: inherit; }
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg,
-        rgba(241, 245, 252, 0.08) 0%,
-        rgba(241, 245, 252, 0.18) 55%,
-        rgba(241, 245, 252, 0.55) 100%);
+        rgba(241, 245, 252, 0.04) 0%,
+        rgba(241, 245, 252, 0.12) 60%,
+        rgba(241, 245, 252, 0.62) 100%);
     transition: background var(--transition);
+    z-index: 1;
 }
 
 body[data-theme="dark"] .hero-banner::after {
     background: linear-gradient(180deg,
-        rgba(8, 12, 28, 0.25) 0%,
-        rgba(8, 12, 28, 0.48) 55%,
-        rgba(13, 17, 32, 0.90) 100%);
+        rgba(8, 12, 28, 0.18) 0%,
+        rgba(8, 12, 28, 0.42) 60%,
+        rgba(13, 17, 32, 0.92) 100%);
+}
+
+/* ── Scroll cue — animated hint sitting at the bottom of the hero ── */
+.scroll-cue {
+    position: absolute;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    will-change: opacity;
+    /* Theme-aware color — dark in light mode, light in dark mode */
+    color: var(--main-text-color);
+}
+
+.scroll-cue-label {
+    font-family: "DM Sans", "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: inherit;
+    padding-left: 0.32em; /* optical balance for letter-spacing */
+    /* Dual shadow — crisp edge on a light overlay */
+    text-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.45),
+        0 0 24px rgba(255, 255, 255, 0.25);
+}
+
+body[data-theme="dark"] .scroll-cue-label {
+    text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.6),
+        0 0 24px rgba(0, 0, 0, 0.4);
+}
+
+.scroll-cue-line {
+    position: relative;
+    width: 2px;
+    height: 72px;
+    background-color: color-mix(in srgb, currentColor 32%, transparent);
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+/* Accent-blue comet — pops on both light and dark backgrounds */
+.scroll-cue-line::after {
+    content: "";
+    position: absolute;
+    top: -36px;
+    left: 0;
+    width: 100%;
+    height: 36px;
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        var(--accent) 100%);
+    animation: scroll-comet 2.2s cubic-bezier(0.55, 0.05, 0.35, 1) infinite;
+}
+
+@keyframes scroll-comet {
+    0%   { transform: translateY(0);     opacity: 0; }
+    10%  { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { transform: translateY(108px); opacity: 0; }
+}
+
+/* Small chevron below the line — extra affordance, gently pulses */
+.scroll-cue-chevron {
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    margin-top: -8px;
+    opacity: 0.5;
+    animation: scroll-chevron 2.2s ease-in-out infinite;
+}
+
+@keyframes scroll-chevron {
+    0%, 100% { opacity: 0.35; transform: rotate(45deg) translate(-2px, -2px); }
+    50%      { opacity: 0.8;  transform: rotate(45deg) translate(1px, 1px); }
 }
 
 /* ── Headline block ── */
 .clarity-headline {
     text-align: center;
-    padding: 32px 24px 0;
-    background: var(--page-background);
-    transition: background var(--transition);
+    padding: 40px 24px 0;
 }
 
 .clarity-headline h2 {
@@ -479,11 +584,24 @@ body[data-theme="dark"] .hero-banner::after {
 
 @media (max-width: 600px) {
     .menu-area { padding: 0 4%; }
+
+    /* Switch back to normal flow on mobile — fixed+scroll is unreliable there */
     .hero-banner {
+        position: relative;
+        top: auto; left: auto; right: auto;
         margin: var(--nav-height) 8px 0;
         width: calc(100% - 16px);
         border-radius: 14px;
-        height: 200px;
+        height: 60vh;
+        min-height: 200px;
     }
+    .page-content {
+        margin-top: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .scroll-cue { display: none; }
+
     .Url, .email-content { padding: 22px 18px; }
 }
