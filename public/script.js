@@ -33,6 +33,24 @@ const RISK_STYLES = {
 let lastUrlSubmission = null;
 let lastEmailSubmission = null;
 
+// ── Report-result UI state ──
+// Each checker (URL, Email) has its own "Report Result" button. They share a
+// single confirmation popup — just "are you sure?" with Cancel/Submit.
+const urlReportButton = document.getElementById('urlReportBtn');
+const emailReportButton = document.getElementById('emailReportBtn');
+const reportModalElement = document.getElementById('reportModal');
+const reportSubmitButton = document.getElementById('reportSubmitBtn');
+
+// Stash the latest scan result for each checker so the eventual /api/report
+// POST can include the original verdict + submission that was reported.
+// Shape: { riskScore, riskLabel, submission: { url } or { sender, receiver, ... } }
+const lastScanResult = { url: null, email: null };
+
+// Which checker opened the modal. Set when the modal opens, cleared when it closes.
+// We need this because the modal itself is shared — it doesn't know whether the
+// user clicked Report on the URL or Email panel until we tell it.
+let activeReportMode = null;
+
 function showLoader(loaderId) {
     const loaderElement = document.getElementById(loaderId);
     if (!loaderElement) {
@@ -136,6 +154,135 @@ function setLastSubmission(mode, submission) {
     }
 
     renderLastSubmission(mode);
+}
+
+// Small lookup helper so we don't repeat the mode-to-element mapping everywhere.
+function getReportButton(mode) {
+    return mode === 'url' ? urlReportButton : emailReportButton;
+}
+
+// Puts BOTH report buttons back in their pre-scan state:
+//   - hidden (because there's nothing to report until a scan has run)
+//   - label reset from "✓ Reported" back to "Report Result"
+//   - re-enabled and stripped of the green "is-reported" style
+// Called when the user switches checker tabs, since switching invalidates
+// whatever was on screen.
+function resetReportButtons() {
+    ['url', 'email'].forEach((mode) => {
+        const button = getReportButton(mode);
+        if (!button) {
+            return;
+        }
+        button.hidden = true;
+        button.classList.remove('is-reported');
+        button.textContent = 'Report Result';
+        button.disabled = false;
+    });
+}
+
+// Called right after a scan finishes. Does two things:
+//   1. Remembers the scan result so the modal can prefill with it later.
+//   2. Reveals the "Report Result" button in that panel.
+// Also resets any stale "✓ Reported" state in case the user ran a previous
+// scan, reported it, and is now scanning again.
+function showReportButton(mode, scanResult) {
+    lastScanResult[mode] = scanResult;
+    const button = getReportButton(mode);
+    if (!button) {
+        return;
+    }
+    button.hidden = false;
+    button.classList.remove('is-reported');
+    button.textContent = 'Report Result';
+    button.disabled = false;
+}
+
+// Opens the shared confirmation popup for whichever checker triggered it.
+function openReportModal(mode) {
+    if (!reportModalElement) {
+        return;
+    }
+    // Remember which checker opened this modal. handleReportSubmit reads
+    // this to know which scan result to include in the payload.
+    activeReportMode = mode;
+    reportModalElement.hidden = false;
+}
+
+// Hides the modal and forgets which checker opened it.
+// Triggered by Cancel, backdrop click, Escape key, or successful submit.
+function closeReportModal() {
+    if (!reportModalElement) {
+        return;
+    }
+    reportModalElement.hidden = true;
+    activeReportMode = null;
+}
+
+// Builds the report payload, logs it, and flips the button into the "Reported" state.
+// Frontend-only for now — when the backend is wired, replace the console.log
+// with a fetch('/api/report', { method: 'POST', body: JSON.stringify(payload) }).
+function handleReportSubmit() {
+    // Guard: if somehow the modal is open without an active mode, bail.
+    if (!activeReportMode) {
+        return;
+    }
+    const mode = activeReportMode;
+    const scan = lastScanResult[mode];
+
+    // Build the payload. This is the shape the backend will receive once
+    // /api/report exists — structured now so no frontend rewrite is needed later.
+    const payload = {
+        mode,                                              // 'url' or 'email'
+        originalRiskScore: scan ? scan.riskScore : null,   // what the model said (number %)
+        originalRiskLabel: scan ? scan.riskLabel : null,   // what the model said (label)
+        submission: scan ? scan.submission : null,         // the original URL or email fields
+        reportedAt: new Date().toISOString()               // client-side timestamp
+    };
+    console.log('Report submitted:', payload);
+
+    // Turn the button into the success-state "✓ Reported" pill and lock it
+    // so the user can't double-submit the same report.
+    const button = getReportButton(mode);
+    if (button) {
+        button.textContent = '✓ Reported';
+        button.classList.add('is-reported');
+        button.disabled = true;
+    }
+
+    closeReportModal();
+}
+
+// Wires up every way the modal can be opened, closed, or submitted.
+// Called once on page load.
+function initializeReportModal() {
+    // Clicking either "Report Result" button opens the shared modal,
+    // tagged with which checker it came from.
+    if (urlReportButton) {
+        urlReportButton.addEventListener('click', () => openReportModal('url'));
+    }
+    if (emailReportButton) {
+        emailReportButton.addEventListener('click', () => openReportModal('email'));
+    }
+
+    // Submit button inside the modal.
+    if (reportSubmitButton) {
+        reportSubmitButton.addEventListener('click', handleReportSubmit);
+    }
+
+    // Any element inside the modal with data-close-modal will dismiss it
+    // (the Cancel button and the backdrop both use this attribute).
+    if (reportModalElement) {
+        reportModalElement.querySelectorAll('[data-close-modal]').forEach((element) => {
+            element.addEventListener('click', closeReportModal);
+        });
+    }
+
+    // Escape key also closes the modal — standard accessible-dialog behavior.
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && reportModalElement && !reportModalElement.hidden) {
+            closeReportModal();
+        }
+    });
 }
 
 // Switches the result message between the neutral/default style and the error style.
@@ -329,6 +476,16 @@ function checkURL() {
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
     hideEmailConfidenceBar();
+    // Hide the report button during the scan — it'll be re-shown on success.
+    // This also clears any leftover "✓ Reported" state from a previous scan,
+    // so the button comes back fresh if the user re-scans the same URL.
+    const urlReportBtn = getReportButton('url');
+    if (urlReportBtn) {
+        urlReportBtn.hidden = true;
+        urlReportBtn.classList.remove('is-reported');
+        urlReportBtn.textContent = 'Report Result';
+        urlReportBtn.disabled = false;
+    }
     showLoader('urlLoader');
 
     // Ask the Python ML service for the phishing prediction.
@@ -348,6 +505,13 @@ function checkURL() {
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
         setLastSubmission('url', { url });
+        // Reveal the Report Result button and remember the verdict + submission,
+        // so if the user opens the modal we can prefill it with accurate context.
+        showReportButton('url', {
+            riskScore,
+            riskLabel: getRiskStyle(riskScore).label,
+            submission: { url }
+        });
        
         // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
@@ -398,6 +562,15 @@ function analyzeEmail() {
     // Added so the shared risk card appears inside the Email panel.
     mountRiskCard('email');
     hideEmailConfidenceBar();
+    // Hide the report button during the scan — mirrors the URL flow above.
+    // Also wipes any prior "✓ Reported" state so the next verdict is reportable.
+    const emailReportBtn = getReportButton('email');
+    if (emailReportBtn) {
+        emailReportBtn.hidden = true;
+        emailReportBtn.classList.remove('is-reported');
+        emailReportBtn.textContent = 'Report Result';
+        emailReportBtn.disabled = false;
+    }
     showLoader('emailLoader');
 
     // Ask the Python ML service for the email phishing prediction.
@@ -420,11 +593,21 @@ function analyzeEmail() {
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
-        setLastSubmission('email', {
+        // Grab the email fields once into a single object so we can reuse it
+        // for both the "last submission" dropdown and the report button state.
+        const emailSubmission = {
             sender: sender.value,
             receiver: receiver.value,
             subject: subject.value,
             body_content: body_content.value
+        };
+        setLastSubmission('email', emailSubmission);
+        // Reveal the Report Result button and stash the full email submission
+        // so the eventual backend call can include exactly what was analyzed.
+        showReportButton('email', {
+            riskScore,
+            riskLabel: getRiskStyle(riskScore).label,
+            submission: emailSubmission
         });
         
         // Store the analyzed email submission through the existing Node backend.
@@ -494,6 +677,9 @@ function setCheckerMode(mode) {
 
     // Hide the risk bar until the next scan starts.
     hideEmailConfidenceBar();
+    // Switching tabs means the visible scan result is gone, so any "report this
+    // result" button no longer has a result to attach to. Hide them both.
+    resetReportButtons();
 
 }
 
@@ -577,6 +763,9 @@ initializeCheckerModeSwitch();
 
 // Finally, wire up the small "last submission" toggles inside each panel.
 initializeLastSubmissionToggles();
+
+// Wire up the Report Result modal (button clicks, cancel, submit, escape-to-close).
+initializeReportModal();
 
 // Hero scroll-shrink animation.
 initHeroScroll();

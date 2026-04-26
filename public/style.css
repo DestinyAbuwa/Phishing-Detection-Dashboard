@@ -461,13 +461,37 @@ body[data-theme="dark"] .scroll-cue-label {
     resize: vertical;
 }
 
-/* Panel action row (Scan button + toggle) */
+/* Panel action row (Report + Scan button + toggle) */
 .panel-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 8px;
     margin-top: 4px;
+}
+
+/* Report Result button — inherits the accent-blue styling from .Url button /
+   .email-content button. The only extra rule it needs is to sit on the LEFT
+   while Scan/Analyze sit on the right.
+
+   How `margin-right: auto` pushes it left:
+   The parent .panel-actions is a flex row with `justify-content: flex-end`,
+   which normally packs all children at the right edge. When one flex item has
+   `margin-right: auto`, that margin absorbs ALL the leftover free space in the
+   row, effectively shoving that item to the far left while the others stay
+   right-aligned. No wrapper div, no extra markup — one line. */
+.report-btn { margin-right: auto; }
+
+/* Success state applied after the user submits a report.
+   We override the blue accent with a soft green outline so the user sees
+   visual confirmation without another toast/banner. `pointer-events: none`
+   prevents double-submits by making the button non-clickable. */
+.report-btn.is-reported {
+    background-color: transparent !important;
+    color: #1f8f4e !important;
+    border: 1px solid #bfe7cf;
+    cursor: default;
+    pointer-events: none;
 }
 
 .Url button,
@@ -580,6 +604,132 @@ body[data-theme="dark"] .scroll-cue-label {
     font-size: 28px;
     font-weight: 700;
     color: var(--secondary-text-color);
+}
+
+/* ── Report Result modal ──
+   Fullscreen overlay centered on the page. Hidden by default via the HTML
+   `hidden` attribute; JS toggles it open/closed. Uses a flex container so
+   the dialog centers both horizontally and vertically at any viewport size. */
+.report-modal {
+    position: fixed;             /* covers the viewport, not the document */
+    inset: 0;                    /* shorthand for top/right/bottom/left: 0 */
+    z-index: 200;                /* above the nav (z-index: 100) */
+    display: flex;
+    align-items: center;         /* vertical centering of the dialog */
+    justify-content: center;     /* horizontal centering of the dialog */
+    padding: 24px;               /* breathing room on small screens */
+}
+
+/* Respect the HTML `hidden` attribute even though we're using display:flex.
+   Without this override, [hidden] is beaten by the .report-modal display rule. */
+.report-modal[hidden] { display: none; }
+
+/* Dimmed, blurred layer sitting behind the dialog.
+   It has data-close-modal in the HTML, so clicking it dismisses the modal. 
+    -webkit-backdrop-filter: blur(4px);  Safari support */
+.report-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 28, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+/* The actual modal panel. Matches the checker-card aesthetic (same radius,
+   shadow, and theme variables) so it feels native to the rest of the UI. */
+.report-modal-dialog {
+    position: relative;          /* sits above .report-modal-backdrop */
+    width: 100%;
+    max-width: 460px;            /* keeps the form readable on wide screens */
+    padding: 28px 28px 22px;
+    border-radius: var(--radius-card);
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border-color);
+    box-shadow: var(--card-shadow);
+    color: var(--main-text-color);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;                   /* consistent spacing between form rows */
+    animation: report-modal-in 0.18s ease-out;
+}
+
+/* Subtle entrance animation — the dialog pops in with a small upward nudge
+   and fade instead of appearing abruptly. */
+@keyframes report-modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.report-modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+.report-modal-subtitle {
+    margin: -6px 0 4px;
+    font-size: 13px;
+    color: var(--secondary-text-color);
+}
+
+/* Row at the bottom of the modal holding Cancel + Submit.
+   flex-end pushes buttons to the right edge — standard modal convention
+   (primary action bottom-right, matches native OS dialogs). */
+.report-modal-actions {
+    display: flex;
+    justify-content: flex-end;        /* right-align the button pair */
+    gap: 8px;                         /* space between Cancel and Submit */
+    margin-top: 8px;                  /* small separation from the subtitle above */
+}
+
+/* Shared base for both dialog buttons (shared sizing + transitions),
+   then the two variants below diverge on color only. */
+.report-modal-cancel,
+.report-modal-submit {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+    transition: background-color var(--transition), transform 0.15s, border-color var(--transition);
+    border: 1px solid transparent;
+}
+
+/* Secondary "Cancel" — outlined only, recedes visually so the primary submit
+   action is the obvious target. */
+.report-modal-cancel {
+    background-color: transparent;
+    border-color: var(--input-border-color);
+    color: var(--secondary-text-color);
+}
+
+.report-modal-cancel:hover {
+    color: var(--main-text-color);
+    border-color: var(--accent);
+}
+
+/* Primary "Submit Report" — solid accent fill matching the scan buttons. */
+.report-modal-submit {
+    background-color: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.report-modal-submit:hover {
+    background-color: var(--button-hover-background);
+    transform: translateY(-1px);
+}
+
+/* Inline confirmation replacing the Report button after submit */
+.report-confirmation {
+    margin-right: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f8f4e;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 @media (max-width: 600px) {

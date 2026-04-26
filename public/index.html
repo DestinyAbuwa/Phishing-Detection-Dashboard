@@ -57,6 +57,10 @@
                 <h1>URL Checker</h1>
                 <input type="text" id="urlInput" placeholder="Paste a suspicious link here&hellip;">
                 <div class="panel-actions">
+                    <!-- Report Result: hidden until a scan completes. JS in script.js
+                         removes the `hidden` attribute inside showReportButton(). -->
+                    <button id="urlReportBtn" class="report-btn" type="button" hidden
+                        data-mode="url">Report Result</button>
                     <button type="button" onclick="checkURL()">Scan Link</button>
                     <button id="urlLastToggle" class="last-submission-toggle" type="button" hidden
                         aria-expanded="false" aria-controls="urlLastDetails">&#9662;</button>
@@ -76,6 +80,10 @@
                 <input type="text" id="subject" placeholder="Subject line">
                 <textarea id="email-body" placeholder="Paste the email body here&hellip;"></textarea>
                 <div class="panel-actions">
+                    <!-- Report Result: mirrors the URL panel — hidden until the
+                         email scan finishes, then revealed by showReportButton(). -->
+                    <button id="emailReportBtn" class="report-btn" type="button" hidden
+                        data-mode="email">Report Result</button>
                     <button type="button" onclick="analyzeEmail()">Analyze Email</button>
                     <button id="emailLastToggle" class="last-submission-toggle" type="button" hidden
                         aria-expanded="false" aria-controls="emailLastDetails">&#9662;</button>
@@ -109,6 +117,34 @@
     </section>
 
     </div><!-- /.page-content -->
+
+    <!-- Report Result confirmation popup.
+         Simple "are you sure?" dialog shared by both the URL and Email checkers.
+         Hidden by default (the `hidden` attribute); script.js toggles it open.
+         Elements with data-close-modal (the backdrop + Cancel button) dismiss it
+         on click — handled by initializeReportModal() in script.js. -->
+    <div id="reportModal" class="report-modal" hidden role="dialog" aria-modal="true"
+        aria-labelledby="reportModalTitle">
+
+        <!-- Dimmed backdrop. Clicking it closes the modal. -->
+        <div class="report-modal-backdrop" data-close-modal></div>
+
+        <!-- The dialog panel itself, centered on top of the backdrop. -->
+        <div class="report-modal-dialog" role="document">
+            <h2 id="reportModalTitle" class="report-modal-title">Report this result?</h2>
+            <p class="report-modal-subtitle">
+                Are you sure you want to report this result as incorrect? This helps us improve detection accuracy.
+            </p>
+
+            <!-- Cancel closes the modal via data-close-modal; Submit runs
+                 handleReportSubmit() which logs the payload and marks the
+                 report button as "✓ Reported". -->
+            <div class="report-modal-actions">
+                <button type="button" class="report-modal-cancel" data-close-modal>Cancel</button>
+                <button id="reportSubmitBtn" type="button" class="report-modal-submit">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
 
     <script src="loading-bar.js"></script>
     <script src="script.js"></script>
