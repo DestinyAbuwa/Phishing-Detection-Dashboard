@@ -5,19 +5,26 @@ import numpy as np
 import re
 import shap
 from scipy.sparse import hstack
+from pathlib import Path
 from urllib.parse import urlparse
 
 app = Flask(__name__)
 CORS(app)                            # <-- NEW (allows all origins)
 
+BASE_DIR = Path(__file__).resolve().parent
+
 # Load email models
-email_tfidf = joblib.load("email_tfidf.pkl")
-email_scaler = joblib.load("email_scaler.pkl")
-email_model = joblib.load("email_model.pkl")
+email_tfidf = joblib.load(BASE_DIR / "email_tfidf.pkl")
+email_scaler = joblib.load(BASE_DIR / "email_scaler.pkl")
+email_model = joblib.load(BASE_DIR / "email_model.pkl")
 
 # Load URL models
-url_scaler = joblib.load("url_scaler.pkl")
-url_model = joblib.load("url_model.pkl")
+url_scaler = joblib.load(BASE_DIR / "url_scaler.pkl")
+url_model = joblib.load(BASE_DIR / "url_model.pkl")
+try:
+    url_extension_encoder = joblib.load(BASE_DIR / "url_extension_encoder.pkl")
+except FileNotFoundError:
+    url_extension_encoder = {}
 
 EMAIL_NUMERIC_FEATURE_NAMES = [
     "num_exclamations", "num_questions", "num_dollar", "num_email_addresses",
@@ -25,17 +32,17 @@ EMAIL_NUMERIC_FEATURE_NAMES = [
 ]
 
 URL_FEATURE_NAMES = [
-    "is_ip", "url_len", "has_at", "is_redirect", "has_dash", "domain_len", "nos_subdomain"
+    "is_ip", "has_at", "is_redirect", "has_dash", "domain_len", "nos_subdomain", "extension"
 ]
 
 URL_FEATURE_LABELS = {
     "is_ip": "URL uses an IP address",
-    "url_len": "URL length",
     "has_at": "Contains @ symbol",
     "is_redirect": "Contains redirect text",
     "has_dash": "Contains dash",
     "domain_len": "Domain length",
-    "nos_subdomain": "Number of subdomains"
+    "nos_subdomain": "Number of subdomains",
+    "extension": "Domain extension"
 }
 
 EMAIL_FEATURE_LABELS = {
@@ -57,6 +64,14 @@ EMAIL_SCAM_KEYWORDS = [
     "security alert", "payment", "invoice", "refund", "gift card", "wire transfer"
 ]
 
+NOMINAL_FEATURE_VALUES = {
+    "is_ip": {0: "No", 1: "Yes"},
+    "has_at": {0: "No", 1: "Yes"},
+    "is_redirect": {0: "No", 1: "Yes"},
+    "has_dash": {0: "No", 1: "Yes"},
+    "has_urgent_words": {0: "No", 1: "Yes"}
+}
+
 url_shap_explainer = shap.TreeExplainer(url_model)
 
 
@@ -68,7 +83,13 @@ def format_feature_name(feature_name):
     return f'Word: "{feature_name}"'
 
 
-def format_feature_value(value):
+def format_feature_value(value, feature_name=None):
+    if feature_name in NOMINAL_FEATURE_VALUES:
+        try:
+            return NOMINAL_FEATURE_VALUES[feature_name][int(value)]
+        except (KeyError, TypeError, ValueError):
+            return value
+
     if isinstance(value, (np.integer, int)):
         return int(value)
     if isinstance(value, (np.floating, float)):
@@ -87,7 +108,7 @@ def get_top_shap_features(shap_values, feature_names, feature_values, limit=2):
     return [
         {
             "feature": format_feature_name(feature_name),
-            "value": format_feature_value(feature_values.get(feature_name, "")),
+            "value": format_feature_value(feature_values.get(feature_name, ""), feature_name),
             "impact": round(float(value), 4)
         }
         for feature_name, value in ranked_features[:limit]
@@ -177,7 +198,7 @@ def get_email_top_features(X_combined, numeric_feature_values, email_text, predi
 # Load URL blacklist
 BLACKLIST_FILE = "BLACKLIST-urls.txt"
 try:
-    with open(BLACKLIST_FILE, "r") as f:
+    with open(BASE_DIR / BLACKLIST_FILE, "r") as f:
         url_blacklist = [
             line.strip().lower()
             for line in f
@@ -188,7 +209,7 @@ except FileNotFoundError:
 
 WHITELIST_FILE = "WHITELIST-urls.txt"
 try:
-    with open(WHITELIST_FILE, "r") as f:
+    with open(BASE_DIR / WHITELIST_FILE, "r") as f:
         url_whitelist = [
             line.strip().lower()
             for line in f
@@ -202,6 +223,12 @@ def get_url_host(url):
     parsed_url = urlparse(url if "://" in url else f"//{url}")
     host = parsed_url.hostname or ""
     return host.lower().strip(".")
+
+
+def get_url_extension(host):
+    if not host or host.replace(".", "").isdigit() or "." not in host:
+        return "unknown"
+    return host.rsplit(".", 1)[-1]
 
 
 def is_whitelisted_host(host, trusted_domain):
@@ -220,14 +247,15 @@ def extract_url_features(url):
     """Extract the same features as in your url-preprocessing.py"""
     # Simple implementation – adjust according to your actual preprocessing
     host = get_url_host(url)
+    extension = get_url_extension(host)
     is_ip = 1 if host.replace(".", "").isdigit() else 0
-    url_len = len(url)
     has_at = 1 if "@" in url else 0
     is_redirect = 1 if "redirect" in url.lower() else 0
     has_dash = 1 if "-" in url else 0
     domain_len = len(host)
     nos_subdomain = max(host.count(".") - 1, 0)
-    return [is_ip, url_len, has_at, is_redirect, has_dash, domain_len, nos_subdomain]
+    extension_encoded = url_extension_encoder.get(extension, -1)
+    return [is_ip, has_at, is_redirect, has_dash, domain_len, nos_subdomain, extension_encoded]
 
 @app.route("/predict_email", methods=["POST"])
 def predict_email():
@@ -340,13 +368,18 @@ def predict_url():
     print(f"DEBUG: Features for {url} -> {features}")
     
 
+    expected_url_feature_count = getattr(url_scaler, "n_features_in_", len(features))
+    feature_names = URL_FEATURE_NAMES[:expected_url_feature_count]
+    features = features[:expected_url_feature_count]
+
     X = np.array(features).reshape(1, -1)
     X_scaled = url_scaler.transform(X)
     pred = url_model.predict(X_scaled)[0]
     prob = url_model.predict_proba(X_scaled)[0].max()
     url_shap_values = get_url_shap_values(X_scaled, pred)
-    feature_values = dict(zip(URL_FEATURE_NAMES, features))
-    top_features = get_top_shap_features(url_shap_values, URL_FEATURE_NAMES, feature_values)
+    feature_values = dict(zip(feature_names, features))
+    feature_values["extension"] = get_url_extension(host)
+    top_features = get_top_shap_features(url_shap_values, feature_names, feature_values)
 
     return jsonify({
         "label": "Phishing" if pred == 1 else "Legitimate",
