@@ -98,7 +98,20 @@ app.post('/api/check', (req, res) => {
     });
 });
 
+app.post('/api/report', (req, res) => {
+    const { mode, originalRiskScore, originalRiskLabel, submission } = req.body;
 
+    const query = `INSERT INTO reports (mode, original_risk_score, original_risk_label, submission_data) VALUES (?, ?, ?, ?)`;
+    
+    // We stringify the submission object so it fits in the JSON/TEXT column
+    db.query(query, [mode, originalRiskScore, originalRiskLabel, JSON.stringify(submission)], (err, result) => {
+        if (err) {
+            console.error("Database Error:", err);
+            return res.status(500).json({ error: "Failed to save report" });
+        }
+        res.json({ message: "Report saved successfully!", reportId: result.insertId });
+    });
+});
 
 
 // THE LISTENER: This turns the server on. 

@@ -3,6 +3,12 @@ const emailConfidenceBarElement = document.getElementById('emailConfidenceBar');
 const riskCardElement = document.getElementById('riskCard');
 const riskLevelTextElement = document.getElementById('riskLevelText');
 const themeToggleButton = document.getElementById('themeToggle');
+const urlLastToggleElement = document.getElementById('urlLastToggle');
+const urlLastDetailsElement = document.getElementById('urlLastDetails');
+const urlLastContentElement = document.getElementById('urlLastContent');
+const emailLastToggleElement = document.getElementById('emailLastToggle');
+const emailLastDetailsElement = document.getElementById('emailLastDetails');
+const emailLastContentElement = document.getElementById('emailLastContent');
 // This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
 // Risk labels and colors for the shared wave bar.
@@ -24,6 +30,268 @@ const RISK_STYLES = {
         trailColor: '#e7bcbc'
     }
 };
+let lastUrlSubmission = null;
+let lastEmailSubmission = null;
+
+// ── Report-result UI state ──
+// Each checker (URL, Email) has its own "Report Result" button. They share a
+// single confirmation popup — just "are you sure?" with Cancel/Submit.
+const urlReportButton = document.getElementById('urlReportBtn');
+const emailReportButton = document.getElementById('emailReportBtn');
+const reportModalElement = document.getElementById('reportModal');
+const reportSubmitButton = document.getElementById('reportSubmitBtn');
+
+// Stash the latest scan result for each checker so the eventual /api/report
+// POST can include the original verdict + submission that was reported.
+// Shape: { riskScore, riskLabel, submission: { url } or { sender, receiver, ... } }
+const lastScanResult = { url: null, email: null };
+
+// Which checker opened the modal. Set when the modal opens, cleared when it closes.
+// We need this because the modal itself is shared — it doesn't know whether the
+// user clicked Report on the URL or Email panel until we tell it.
+let activeReportMode = null;
+
+function showLoader(loaderId) {
+    const loaderElement = document.getElementById(loaderId);
+    if (!loaderElement) {
+        return;
+    }
+
+    loaderElement.classList.add('is-loading');
+}
+
+function hideLoader(loaderId) {
+    const loaderElement = document.getElementById(loaderId);
+    if (!loaderElement) {
+        return;
+    }
+
+    loaderElement.classList.remove('is-loading');
+}
+
+function createLastSubmissionItem(label, value, multiline = false) {
+    const detailItem = document.createElement('div');
+    detailItem.className = 'last-submission-item';
+
+    const detailLabel = document.createElement('span');
+    detailLabel.className = 'last-submission-item-label';
+    detailLabel.textContent = label;
+
+    const detailValue = document.createElement('p');
+    detailValue.className = `last-submission-item-value${multiline ? ' is-multiline' : ''}`;
+    detailValue.textContent = value;
+
+    detailItem.appendChild(detailLabel);
+    detailItem.appendChild(detailValue);
+    return detailItem;
+}
+
+function getLastSubmissionElements(mode) {
+    if (mode === 'url') {
+        return {
+            toggleElement: urlLastToggleElement,
+            detailsElement: urlLastDetailsElement,
+            contentElement: urlLastContentElement
+        };
+    }
+
+    return {
+        toggleElement: emailLastToggleElement,
+        detailsElement: emailLastDetailsElement,
+        contentElement: emailLastContentElement
+    };
+}
+
+function renderLastSubmission(mode) {
+    const { toggleElement, detailsElement, contentElement } = getLastSubmissionElements(mode);
+    const submission = mode === 'url' ? lastUrlSubmission : lastEmailSubmission;
+
+    if (!toggleElement || !detailsElement || !contentElement) {
+        return;
+    }
+
+    if (!submission) {
+        toggleElement.hidden = true;
+        toggleElement.setAttribute('aria-expanded', 'false');
+        detailsElement.hidden = true;
+        contentElement.innerHTML = '';
+        return;
+    }
+
+    toggleElement.hidden = false;
+    toggleElement.setAttribute('aria-expanded', 'false');
+    detailsElement.hidden = true;
+    contentElement.innerHTML = '';
+
+    if (mode === 'url') {
+        contentElement.textContent = submission.url;
+        return;
+    }
+
+    contentElement.appendChild(createLastSubmissionItem('Sender', submission.sender));
+    contentElement.appendChild(createLastSubmissionItem('Receiver', submission.receiver));
+    contentElement.appendChild(createLastSubmissionItem('Subject', submission.subject));
+    contentElement.appendChild(createLastSubmissionItem('Email body', submission.body_content, true));
+}
+
+function toggleLastSubmission(mode) {
+    const { toggleElement, detailsElement } = getLastSubmissionElements(mode);
+
+    if (!toggleElement || !detailsElement || toggleElement.hidden) {
+        return;
+    }
+
+    const isExpanded = toggleElement.getAttribute('aria-expanded') === 'true';
+    toggleElement.setAttribute('aria-expanded', String(!isExpanded));
+    detailsElement.hidden = isExpanded;
+}
+
+function setLastSubmission(mode, submission) {
+    if (mode === 'url') {
+        lastUrlSubmission = submission;
+    } else {
+        lastEmailSubmission = submission;
+    }
+
+    renderLastSubmission(mode);
+}
+
+// Small lookup helper so we don't repeat the mode-to-element mapping everywhere.
+function getReportButton(mode) {
+    return mode === 'url' ? urlReportButton : emailReportButton;
+}
+
+// Puts BOTH report buttons back in their pre-scan state:
+//   - hidden (because there's nothing to report until a scan has run)
+//   - label reset from "✓ Reported" back to "Report Result"
+//   - re-enabled and stripped of the green "is-reported" style
+// Called when the user switches checker tabs, since switching invalidates
+// whatever was on screen.
+function resetReportButtons() {
+    ['url', 'email'].forEach((mode) => {
+        const button = getReportButton(mode);
+        if (!button) {
+            return;
+        }
+        button.hidden = true;
+        button.classList.remove('is-reported');
+        button.textContent = 'Report Result';
+        button.disabled = false;
+    });
+}
+
+// Called right after a scan finishes. Does two things:
+//   1. Remembers the scan result so the modal can prefill with it later.
+//   2. Reveals the "Report Result" button in that panel.
+// Also resets any stale "✓ Reported" state in case the user ran a previous
+// scan, reported it, and is now scanning again.
+function showReportButton(mode, scanResult) {
+    lastScanResult[mode] = scanResult;
+    const button = getReportButton(mode);
+    if (!button) {
+        return;
+    }
+    button.hidden = false;
+    button.classList.remove('is-reported');
+    button.textContent = 'Report Result';
+    button.disabled = false;
+}
+
+// Opens the shared confirmation popup for whichever checker triggered it.
+function openReportModal(mode) {
+    if (!reportModalElement) {
+        return;
+    }
+    // Remember which checker opened this modal. handleReportSubmit reads
+    // this to know which scan result to include in the payload.
+    activeReportMode = mode;
+    reportModalElement.hidden = false;
+}
+
+// Hides the modal and forgets which checker opened it.
+// Triggered by Cancel, backdrop click, Escape key, or successful submit.
+function closeReportModal() {
+    if (!reportModalElement) {
+        return;
+    }
+    reportModalElement.hidden = true;
+    activeReportMode = null;
+}
+
+// Builds the report payload, logs it, and flips the button into the "Reported" state.
+// Frontend-only for now — when the backend is wired, replace the console.log
+// with a fetch('/api/report', { method: 'POST', body: JSON.stringify(payload) }).
+function handleReportSubmit() {
+    // Guard: if somehow the modal is open without an active mode, bail.
+    if (!activeReportMode) {
+        return;
+    }
+    const mode = activeReportMode;
+    const scan = lastScanResult[mode];
+
+    // Build the payload. This is the shape the backend will receive once
+    // /api/report exists — structured now so no frontend rewrite is needed later.
+    const payload = {
+        mode,                                              // 'url' or 'email'
+        originalRiskScore: scan ? scan.riskScore : null,   // what the model said (number %)
+        originalRiskLabel: scan ? scan.riskLabel : null,   // what the model said (label)
+        submission: scan ? scan.submission : null,         // the original URL or email fields
+        reportedAt: new Date().toISOString()               // client-side timestamp
+    };
+
+// --- REAL BACKEND CALL ---
+    fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+        // Flip the button to "✓ Reported" state as Vince intended
+        const button = getReportButton(mode);
+        if (button) {
+            button.textContent = '✓ Reported';
+            button.classList.add('is-reported');
+            button.disabled = true;
+        }
+        closeReportModal();
+    })
+    .catch(error => console.error('Error reporting result:', error));
+}
+
+// Wires up every way the modal can be opened, closed, or submitted.
+// Called once on page load.
+function initializeReportModal() {
+    // Clicking either "Report Result" button opens the shared modal,
+    // tagged with which checker it came from.
+    if (urlReportButton) {
+        urlReportButton.addEventListener('click', () => openReportModal('url'));
+    }
+    if (emailReportButton) {
+        emailReportButton.addEventListener('click', () => openReportModal('email'));
+    }
+
+    // Submit button inside the modal.
+    if (reportSubmitButton) {
+        reportSubmitButton.addEventListener('click', handleReportSubmit);
+    }
+
+    // Any element inside the modal with data-close-modal will dismiss it
+    // (the Cancel button and the backdrop both use this attribute).
+    if (reportModalElement) {
+        reportModalElement.querySelectorAll('[data-close-modal]').forEach((element) => {
+            element.addEventListener('click', closeReportModal);
+        });
+    }
+
+    // Escape key also closes the modal — standard accessible-dialog behavior.
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && reportModalElement && !reportModalElement.hidden) {
+            closeReportModal();
+        }
+    });
+}
 
 // Switches the result message between the neutral/default style and the error style.
 function setResultState(resultDiv, state) {
@@ -216,32 +484,51 @@ function checkURL() {
         return;
     }
 
-    // Update the shared heading so the risk card shows which URL was just tested.
-    document.getElementById('testedUrlHeading').textContent = `Tested URL: ${url}`;
 
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
-    
-    // Show the risk bar immediately at 0 so the user gets instant visual feedback.
-    setEmailConfidenceBar(0);
+    hideEmailConfidenceBar();
+    // Hide the report button during the scan — it'll be re-shown on success.
+    // This also clears any leftover "✓ Reported" state from a previous scan,
+    // so the button comes back fresh if the user re-scans the same URL.
+    const urlReportBtn = getReportButton('url');
+    if (urlReportBtn) {
+        urlReportBtn.hidden = true;
+        urlReportBtn.classList.remove('is-reported');
+        urlReportBtn.textContent = 'Report Result';
+        urlReportBtn.disabled = false;
+    }
+    showLoader('urlLoader');
 
     // Ask the Python ML service for the phishing prediction.
-    fetch('http://localhost:5000/predict_url', {
+    // Promise.all ensures the loader shows for at least 700ms regardless of fetch speed.
+    const urlFetch = fetch('http://localhost:5000/predict_url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })
-    })
-    .then(response => response.json())
-    .then(prediction => {
+    }).then(response => response.json());
+
+    
+    Promise.all([urlFetch, new Promise(resolve => setTimeout(resolve, 700))])
+    .then(([prediction]) => {
+        hideLoader('urlLoader');
         // Convert the backend response into one normalized risk score for the UI.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        setLastSubmission('url', { url });
+        // Reveal the Report Result button and remember the verdict + submission,
+        // so if the user opens the modal we can prefill it with accurate context.
+        showReportButton('url', {
+            riskScore,
+            riskLabel: getRiskStyle(riskScore).label,
+            submission: { url }
+        });
        
         // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
-            method: 'POST', // We use POST because we are sending data
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 url: url,
@@ -249,7 +536,7 @@ function checkURL() {
                 risk_score: riskScore // "Phishing" or "Legitimate"
              }) // Convert the URL into a JSON string // The number for your risk_score column
         })
-        .then(response => response.json()) // Wait for the server to send back a JSON response
+        .then(response => response.json())
         .then(data => {
             
             // // If the server says redirect is true, send them to login
@@ -263,12 +550,9 @@ function checkURL() {
 
             // Keep the prediction message, but log the database save
             console.log("Submission ID from Database:", data.submissionId);
-            // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
         })
         .catch(err => {
-            // ERROR HANDLING: Runs if the database save fails
             console.error("Storage Error:", err);
-            // We don't overwrite the prediction result, just log the error
         });
 
         // Clear the input field
@@ -277,6 +561,7 @@ function checkURL() {
     .catch(err => {
         // If the Python service is unavailable, show the error style instead of the default style.
         console.error("Prediction error:", err);
+        hideLoader('urlLoader');
         hideEmailConfidenceBar();
         resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
@@ -310,11 +595,21 @@ function analyzeEmail() {
 
     // Added so the shared risk card appears inside the Email panel.
     mountRiskCard('email');
-    // Show the bar immediately so the user sees the email is being processed.
-    setEmailConfidenceBar(0);
+    hideEmailConfidenceBar();
+    // Hide the report button during the scan — mirrors the URL flow above.
+    // Also wipes any prior "✓ Reported" state so the next verdict is reportable.
+    const emailReportBtn = getReportButton('email');
+    if (emailReportBtn) {
+        emailReportBtn.hidden = true;
+        emailReportBtn.classList.remove('is-reported');
+        emailReportBtn.textContent = 'Report Result';
+        emailReportBtn.disabled = false;
+    }
+    showLoader('emailLoader');
 
     // Ask the Python ML service for the email phishing prediction.
-    fetch('http://localhost:5000/predict_email', {
+    // Promise.all ensures the loader shows for at least 700ms regardless of fetch speed.
+    const emailFetch = fetch('http://localhost:5000/predict_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -323,20 +618,38 @@ function analyzeEmail() {
             subject: subject.value,
             body_content: body_content.value
         })
-    })
-    .then(response => response.json())
-    .then(prediction => {
+    }).then(response => response.json());
+
+    Promise.all([emailFetch, new Promise(resolve => setTimeout(resolve, 700))])
+    .then(([prediction]) => {
+        hideLoader('emailLoader');
         // Convert the model response into the shared UI risk score.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        // Grab the email fields once into a single object so we can reuse it
+        // for both the "last submission" dropdown and the report button state.
+        const emailSubmission = {
+            sender: sender.value,
+            receiver: receiver.value,
+            subject: subject.value,
+            body_content: body_content.value
+        };
+        setLastSubmission('email', emailSubmission);
+        // Reveal the Report Result button and stash the full email submission
+        // so the eventual backend call can include exactly what was analyzed.
+        showReportButton('email', {
+            riskScore,
+            riskLabel: getRiskStyle(riskScore).label,
+            submission: emailSubmission
+        });
         
         // Store the analyzed email submission through the existing Node backend.
         fetch('/api/check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                url: "", // Since this is an email, the URL can be empty
+                url: "",
                 sender: sender.value,
                 receiver: receiver.value,
                 subject: subject.value,
@@ -347,13 +660,10 @@ function analyzeEmail() {
         })
         .then(response => response.json())
         .then(data => {
-            // Keep the prediction message, but log the database save
             console.log("Database ID:", data.submissionId);
-            // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
         })
         .catch(err => {
             console.error("Email Submission Error:", err);
-            // We don't overwrite the prediction result, just log the error
         });
 
         // Clear the form once the prediction and storage calls finish.
@@ -365,6 +675,7 @@ function analyzeEmail() {
     .catch(err => {
         // Put the result message into the error theme class if the prediction service fails.
         console.error("Prediction error:", err);
+        hideLoader('emailLoader');
         hideEmailConfidenceBar();
         resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
@@ -403,6 +714,9 @@ function setCheckerMode(mode) {
 
     // Hide the risk bar until the next scan starts.
     hideEmailConfidenceBar();
+    // Switching tabs means the visible scan result is gone, so any "report this
+    // result" button no longer has a result to attach to. Hide them both.
+    resetReportButtons();
 
 }
 
@@ -422,8 +736,73 @@ function initializeCheckerModeSwitch() {
     });
 }
 
+function initializeLastSubmissionToggles() {
+    if (urlLastToggleElement) {
+        urlLastToggleElement.addEventListener('click', () => {
+            toggleLastSubmission('url');
+        });
+    }
+
+    if (emailLastToggleElement) {
+        emailLastToggleElement.addEventListener('click', () => {
+            toggleLastSubmission('email');
+        });
+    }
+}
+
+// Parallax the fish image inside the fixed hero as the user scrolls.
+// The hero itself is fixed — the content layer slides up over it.
+// The image drifts upward slower than the content, with a slight zoom for depth.
+function initHeroScroll() {
+    const heroImg = document.querySelector('.hero-img');
+    const hero = document.querySelector('.hero-banner');
+    const scrollCue = document.querySelector('.scroll-cue');
+    if (!heroImg || !hero) return;
+
+    let ticking = false;
+    let lastY = 0;
+
+    function update() {
+        const vh = window.innerHeight;
+        const progress = Math.min(lastY / vh, 1);
+
+        // Classic parallax: image drifts up at 0.5x scroll speed
+        const translateY = -lastY * 0.5;
+        // Subtle zoom as user scrolls — adds cinematic depth
+        const scale = 1 + progress * 0.08;
+
+        heroImg.style.transform = `translate3d(0, ${translateY}px, 0) scale(${scale})`;
+        // Hero fades slightly as the content layer covers it — softens the transition
+        hero.style.opacity = String(1 - progress * 0.35);
+
+        // Fade scroll cue out quickly once the user starts scrolling
+        if (scrollCue) {
+            scrollCue.style.opacity = String(Math.max(0, 1 - lastY / 120));
+        }
+
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        lastY = window.scrollY;
+        if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
 // Initialize theme handling first so the page colors are correct immediately.
 initializeThemeToggle();
 
 // Then initialize the checker panel tabs.
 initializeCheckerModeSwitch();
+
+// Finally, wire up the small "last submission" toggles inside each panel.
+initializeLastSubmissionToggles();
+
+// Wire up the Report Result modal (button clicks, cancel, submit, escape-to-close).
+initializeReportModal();
+
+// Hero scroll-shrink animation.
+initHeroScroll();
