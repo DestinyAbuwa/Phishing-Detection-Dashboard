@@ -1,0 +1,30 @@
+# Trusted domains that should bypass the URL ML model when the hostname is an exact
+# match or a real subdomain. Example: github.com and docs.github.com pass, but
+# github.com.fake-site.com does not.
+github.com
+youtube.com
+youtu.be
+instagram.com
+facebook.com
+google.com
+gmail.com
+docs.google.com
+drive.google.com
+microsoft.com
+office.com
+live.com
+outlook.com
+apple.com
+icloud.com
+amazon.com
+linkedin.com
+x.com
+twitter.com
+tiktok.com
+reddit.com
+netflix.com
+spotify.com
+wikipedia.org
+stackoverflow.com
+discord.com
+zoom.us
