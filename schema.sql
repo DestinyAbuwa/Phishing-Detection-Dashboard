@@ -7,7 +7,7 @@ USE phishing_db;
 -- Delete the old version
 DROP TABLE IF EXISTS submissions;
 DROP TABLE IF EXISTS users;
-
+DROP TABLE IF EXISTS reports;
 
 -- USERS TABLE (Stores USERS login info)
 CREATE TABLE users (
@@ -30,3 +30,13 @@ CREATE TABLE submissions (
     status VARCHAR(50) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE reports (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    mode ENUM('url', 'email') NOT NULL,
+    original_risk_score DECIMAL(5,2),
+    original_risk_label VARCHAR(50),
+    submission_data JSON, -- Stores the full URL or Email fields
+    reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

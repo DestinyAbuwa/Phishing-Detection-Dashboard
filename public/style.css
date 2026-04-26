@@ -385,17 +385,6 @@ body[data-theme="dark"] .scroll-cue-label {
     align-items: center;
 }
 
-.result-message {
-    min-height: 20px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    width: 100%;
-}
-
-.result-default { color: var(--secondary-text-color); }
-.result-error { color: var(--error-text-color); }
 
 .panel { display: none !important; width: 100%; }
 .panel.active { display: flex !important; }
@@ -500,6 +489,7 @@ body[data-theme="dark"] .scroll-cue-label {
     align-items: center;
     gap: 8px;
     margin-top: 4px;
+    width: 100%;
 }
 
 /* Report Result button — inherits the accent-blue styling from .Url button /
@@ -575,6 +565,9 @@ body[data-theme="dark"] .scroll-cue-label {
     padding-top: 12px;
     border-top: 1px solid var(--section-divider-color);
     margin-top: 4px;
+    width: 100%;       /* Force the box to be as wide as the card */
+    text-align: left;  /* Align the text inside that box */
+    align-self: flex-start; /* Ensure the flex parent doesn't center the whole block */
 }
 
 .last-submission-title {
