@@ -368,6 +368,48 @@ a {
     letter-spacing: 0.2px;
 }
 
+/* SHAP feature summary inside the shared risk card. */
+.shap-feature-summary {
+    width: min(560px, 88%);
+    margin: 12px auto 0;
+    color: var(--main-text-color);
+    text-align: left;
+}
+
+.shap-feature-summary:empty {
+    display: none;
+}
+
+.shap-feature-summary p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    color: var(--secondary-text-color);
+}
+
+.shap-feature-summary ol {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
+}
+
+.shap-feature-summary li {
+    padding: 10px 12px;
+    border: 1px solid var(--section-divider-color);
+    border-radius: 10px;
+    background-color: var(--input-background);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.shap-feature-summary strong {
+    color: var(--secondary-text-color);
+}
+
 /* Heading that shows the tested URL in URL mode only. */
 .tested-url-heading {
     margin: 0 0 8px;

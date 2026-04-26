@@ -5,6 +5,8 @@ const riskLevelTextElement = document.getElementById('riskLevelText');
 const themeToggleButton = document.getElementById('themeToggle');
 // This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
+const shapFeatureSummaryElement = document.getElementById('shapFeatureSummary');
+let latestShapTopFeatures = [];
 // Risk labels and colors for the shared wave bar.
 // These do not depend on light/dark mode because risk severity should stay visually consistent.
 const RISK_STYLES = {
@@ -24,6 +26,59 @@ const RISK_STYLES = {
         trailColor: '#e7bcbc'
     }
 };
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[character]));
+}
+
+function formatFeatureValue(value) {
+    if (value === null || value === undefined || value === "") {
+        return "not available";
+    }
+
+    return value;
+}
+
+function updateShapFeatureSummary(prediction) {
+    if (!shapFeatureSummaryElement) {
+        return;
+    }
+
+    latestShapTopFeatures = prediction?.top_features || [];
+
+    if (!latestShapTopFeatures.length) {
+        shapFeatureSummaryElement.innerHTML = "";
+        return;
+    }
+
+    const featureItems = latestShapTopFeatures
+        .slice(0, 2)
+        .map((feature) => {
+            const featureName = escapeHTML(feature.feature);
+            const featureValue = escapeHTML(formatFeatureValue(feature.value));
+            return `<li><span>${featureName}</span> <strong>(${featureValue})</strong></li>`;
+        })
+        .join("");
+
+    shapFeatureSummaryElement.innerHTML = `
+        <p>Top decision features</p>
+        <ol>${featureItems}</ol>
+    `;
+}
+
+function clearShapFeatureSummary() {
+    latestShapTopFeatures = [];
+
+    if (shapFeatureSummaryElement) {
+        shapFeatureSummaryElement.innerHTML = "";
+    }
+}
 
 // Switches the result message between the neutral/default style and the error style.
 function setResultState(resultDiv, state) {
@@ -187,6 +242,7 @@ function hideEmailConfidenceBar() {
     if (riskCardElement) {
         riskCardElement.style.display = 'none';
     }
+    clearShapFeatureSummary();
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     bar.set(0, false);
 
@@ -238,6 +294,7 @@ function checkURL() {
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        updateShapFeatureSummary(prediction);
        
         // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
@@ -330,6 +387,7 @@ function analyzeEmail() {
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        updateShapFeatureSummary(prediction);
         
         // Store the analyzed email submission through the existing Node backend.
         fetch('/api/check', {

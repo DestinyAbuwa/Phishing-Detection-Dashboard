@@ -3,7 +3,6 @@
 # github.com.fake-site.com does not.
 github.com
 youtube.com
-youtu.be
 instagram.com
 facebook.com
 google.com
@@ -28,3 +27,7 @@ wikipedia.org
 stackoverflow.com
 discord.com
 zoom.us
+wix.com
+learn.bradley.edu
+pypi.org
+overleaf.com

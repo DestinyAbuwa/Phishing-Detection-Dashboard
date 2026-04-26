@@ -32,7 +32,7 @@ Navigate to the [ML folder](https://github.com/DestinyAbuwa/Phishing-Detection-D
 
 ```bash
 cd ML
-py -m pip install flask flask-cors joblib numpy scipy scikit-learn
+py -m pip install flask flask-cors joblib numpy scipy scikit-learn shap
 ```
 ### 3\. Database Setup
 
