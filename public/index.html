@@ -52,7 +52,7 @@
             <div id="result" class="result-message result-default"></div>
 
             <!-- URL Panel -->
-            <div class="Url panel panel-url active">
+            <form class="Url panel panel-url active" id="urlForm" onsubmit="event.preventDefault(); checkURL();">
                 <div class="scan-loader" id="urlLoader"></div>
                 <h1>URL Checker</h1>
                 <input type="text" id="urlInput" placeholder="Paste a suspicious link here&hellip;">
@@ -61,7 +61,7 @@
                          removes the `hidden` attribute inside showReportButton(). -->
                     <button id="urlReportBtn" class="report-btn" type="button" hidden
                         data-mode="url">Report Result</button>
-                    <button type="button" onclick="checkURL()">Scan Link</button>
+                    <button type="button" type="submit">Scan Link</button>
                     <button id="urlLastToggle" class="last-submission-toggle" type="button" hidden
                         aria-expanded="false" aria-controls="urlLastDetails">&#9662;</button>
                 </div>
@@ -69,7 +69,7 @@
                     <p class="last-submission-title">Last tested URL</p>
                     <p id="urlLastContent" class="last-submission-item-value"></p>
                 </div>
-            </div>
+            </form>
 
             <!-- Email Panel -->
             <form class="email-content panel panel-email">
@@ -112,6 +112,7 @@
                     data-path="M20 90Q80 25 140 90Q200 155 260 90Q320 25 380 90Q440 155 500 90Q560 25 620 90Q680 155 740 90Q800 25 860 90"
                     data-value="0"></div>
                 <p id="riskLevelText" class="risk-level-text">Risk Level</p>
+                <div id="shapFeatureSummary" class="shap-feature-summary" aria-live="polite"></div>
             </div>
         </div>
     </section>

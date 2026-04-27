@@ -599,6 +599,48 @@ body[data-theme="dark"] .scroll-cue-label {
     letter-spacing: -0.01em;
 }
 
+/* SHAP feature summary inside the shared risk card. */
+.shap-feature-summary {
+    width: min(560px, 88%);
+    margin: 12px auto 0;
+    color: var(--main-text-color);
+    text-align: left;
+}
+
+.shap-feature-summary:empty {
+    display: none;
+}
+
+.shap-feature-summary p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    color: var(--secondary-text-color);
+}
+
+.shap-feature-summary ol {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
+}
+
+.shap-feature-summary li {
+    padding: 10px 12px;
+    border: 1px solid var(--section-divider-color);
+    border-radius: 10px;
+    background-color: var(--input-background);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.shap-feature-summary strong {
+    color: var(--secondary-text-color);
+}
+
 /* loading-bar label */
 #emailConfidenceBar .ldBar-label {
     font-size: 28px;
@@ -606,107 +648,23 @@ body[data-theme="dark"] .scroll-cue-label {
     color: var(--secondary-text-color);
 }
 
-/* ── Report Result modal ──
-   Fullscreen overlay centered on the page. Hidden by default via the HTML
-   `hidden` attribute; JS toggles it open/closed. Uses a flex container so
-   the dialog centers both horizontally and vertically at any viewport size. */
-.report-modal {
-    position: fixed;             /* covers the viewport, not the document */
-    inset: 0;                    /* shorthand for top/right/bottom/left: 0 */
-    z-index: 200;                /* above the nav (z-index: 100) */
-    display: flex;
-    align-items: center;         /* vertical centering of the dialog */
-    justify-content: center;     /* horizontal centering of the dialog */
-    padding: 24px;               /* breathing room on small screens */
-}
-
-/* Respect the HTML `hidden` attribute even though we're using display:flex.
-   Without this override, [hidden] is beaten by the .report-modal display rule. */
-.report-modal[hidden] { display: none; }
-
-/* Dimmed, blurred layer sitting behind the dialog.
-   It has data-close-modal in the HTML, so clicking it dismisses the modal. 
-    -webkit-backdrop-filter: blur(4px);  Safari support */
-.report-modal-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(8, 12, 28, 0.55);
-    backdrop-filter: blur(4px);
-}
-
-/* The actual modal panel. Matches the checker-card aesthetic (same radius,
-   shadow, and theme variables) so it feels native to the rest of the UI. */
-.report-modal-dialog {
-    position: relative;          /* sits above .report-modal-backdrop */
-    width: 100%;
-    max-width: 460px;            /* keeps the form readable on wide screens */
-    padding: 28px 28px 22px;
-    border-radius: var(--radius-card);
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border-color);
-    box-shadow: var(--card-shadow);
+/* SHAP feature summary inside the shared risk card. */
+.shap-feature-summary {
+    width: min(560px, 88%);
+    margin: 12px auto 0;
     color: var(--main-text-color);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;                   /* consistent spacing between form rows */
-    animation: report-modal-in 0.18s ease-out;
+    text-align: left;
 }
 
-/* Subtle entrance animation — the dialog pops in with a small upward nudge
-   and fade instead of appearing abruptly. */
-@keyframes report-modal-in {
-    from { opacity: 0; transform: translateY(8px) scale(0.98); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+.shap-feature-summary:empty {
+    display: none;
 }
 
-.report-modal-title {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    margin: 0;
-}
-
-.report-modal-subtitle {
-    margin: -6px 0 4px;
-    font-size: 13px;
-    color: var(--secondary-text-color);
-}
-
-/* Row at the bottom of the modal holding Cancel + Submit.
-   flex-end pushes buttons to the right edge — standard modal convention
-   (primary action bottom-right, matches native OS dialogs). */
-.report-modal-actions {
-    display: flex;
-    justify-content: flex-end;        /* right-align the button pair */
-    gap: 8px;                         /* space between Cancel and Submit */
-    margin-top: 8px;                  /* small separation from the subtitle above */
-}
-
-/* Shared base for both dialog buttons (shared sizing + transitions),
-   then the two variants below diverge on color only. */
-.report-modal-cancel,
-.report-modal-submit {
-    font-family: inherit;
+.shap-feature-summary p {
+    margin: 0 0 8px;
     font-size: 14px;
-    font-weight: 600;
-    padding: 10px 18px;
-    border-radius: var(--radius-btn);
-    cursor: pointer;
-    transition: background-color var(--transition), transform 0.15s, border-color var(--transition);
-    border: 1px solid transparent;
-}
-
-/* Secondary "Cancel" — outlined only, recedes visually so the primary submit
-   action is the obvious target. */
-.report-modal-cancel {
-    background-color: transparent;
-    border-color: var(--input-border-color);
-    color: var(--secondary-text-color);
-}
-
-.report-modal-cancel:hover {
-    color: var(--main-text-color);
-    border-color: var(--accent);
+    font-weight: 800;
+    text-align: center;
 }
 
 /* Primary "Submit Report" — solid accent fill matching the scan buttons. */
@@ -744,6 +702,18 @@ body[data-theme="dark"] .scroll-cue-label {
         border-radius: 14px;
         height: 60vh;
         min-height: 200px;
+    }
+    .page-content {
+        margin-top: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* Slightly tighter card width and padding for mobile. */
+    .Url,
+    .email-content {
+        width: min(92%, 680px);
+        padding: 22px;
     }
     .page-content {
         margin-top: 0;

@@ -11,6 +11,8 @@ const emailLastDetailsElement = document.getElementById('emailLastDetails');
 const emailLastContentElement = document.getElementById('emailLastContent');
 // This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
+const shapFeatureSummaryElement = document.getElementById('shapFeatureSummary');
+let latestShapTopFeatures = [];
 // Risk labels and colors for the shared wave bar.
 // These do not depend on light/dark mode because risk severity should stay visually consistent.
 const RISK_STYLES = {
@@ -30,6 +32,59 @@ const RISK_STYLES = {
         trailColor: '#e7bcbc'
     }
 };
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[character]));
+}
+
+function formatFeatureValue(value) {
+    if (value === null || value === undefined || value === "") {
+        return "not available";
+    }
+
+    return value;
+}
+
+function updateShapFeatureSummary(prediction) {
+    if (!shapFeatureSummaryElement) {
+        return;
+    }
+
+    latestShapTopFeatures = prediction?.top_features || [];
+
+    if (!latestShapTopFeatures.length) {
+        shapFeatureSummaryElement.innerHTML = "";
+        return;
+    }
+
+    const featureItems = latestShapTopFeatures
+        .slice(0, 2)
+        .map((feature) => {
+            const featureName = escapeHTML(feature.feature);
+            const featureValue = escapeHTML(formatFeatureValue(feature.value));
+            return `<li><span>${featureName}</span> <strong>(${featureValue})</strong></li>`;
+        })
+        .join("");
+
+    shapFeatureSummaryElement.innerHTML = `
+        <p>Top decision features</p>
+        <ol>${featureItems}</ol>
+    `;
+}
+
+function clearShapFeatureSummary() {
+    latestShapTopFeatures = [];
+
+    if (shapFeatureSummaryElement) {
+        shapFeatureSummaryElement.innerHTML = "";
+    }
+}
 let lastUrlSubmission = null;
 let lastEmailSubmission = null;
 
@@ -447,6 +502,7 @@ function hideEmailConfidenceBar() {
     if (riskCardElement) {
         riskCardElement.style.display = 'none';
     }
+    clearShapFeatureSummary();
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     bar.set(0, false);
 
@@ -465,9 +521,14 @@ function checkURL() {
     const resultDiv = document.getElementById('result');
     const url = userUrl.value.trim();
 
+    resultDiv.innerHTML = "";
+
+
     // Validation: Don't do anything if the input is empty
     if (!url) {
-        alert("Please paste a URL first!");
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'error');
+        resultDiv.innerHTML = "Please paste a URL first!";
         return;
     }
 
@@ -504,6 +565,7 @@ function checkURL() {
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        updateShapFeatureSummary(prediction);
         setLastSubmission('url', { url });
         // Reveal the Report Result button and remember the verdict + submission,
         // so if the user opens the modal we can prefill it with accurate context.
@@ -517,10 +579,24 @@ function checkURL() {
         fetch('/api/check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url })
+            body: JSON.stringify({
+                url: url,
+                status: prediction.label,
+                risk_score: riskScore // "Phishing" or "Legitimate"
+             }) // The number for your risk_score column
         })
         .then(response => response.json())
         .then(data => {
+            
+            // // If the server says redirect is true, send them to login
+            // if (data.redirect) {
+            //     window.location.href = "login.html"; 
+            //     return;
+            // }
+            // POSTPONED
+
+
+
             console.log("Submission ID from Database:", data.submissionId);
         })
         .catch(err => {
@@ -535,6 +611,7 @@ function checkURL() {
         console.error("Prediction error:", err);
         hideLoader('urlLoader');
         hideEmailConfidenceBar();
+        resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
@@ -553,9 +630,14 @@ function analyzeEmail() {
     const body_content = document.getElementById('email-body');
     const resultDiv = document.getElementById('result');
 
+    resultDiv.innerHTML = "";
+
+    // 2. Validation: ALL fields are now required (sender, receiver, subject, body)
     // All four fields are required before the model is called.
     if (!sender.value.trim() || !receiver.value.trim() || !subject.value.trim() || !body_content.value.trim()) {
-        alert("Please fill in all email fields: Sender, Receiver, Subject, and Body.");
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'error');
+        resultDiv.innerHTML = "Please fill in all email fields: Sender, Receiver, Subject, and Body.";
         return;
     }
 
@@ -609,6 +691,7 @@ function analyzeEmail() {
             riskLabel: getRiskStyle(riskScore).label,
             submission: emailSubmission
         });
+        updateShapFeatureSummary(prediction);
         
         // Store the analyzed email submission through the existing Node backend.
         fetch('/api/check', {
@@ -619,7 +702,9 @@ function analyzeEmail() {
                 sender: sender.value,
                 receiver: receiver.value,
                 subject: subject.value,
-                body_content: body_content.value
+                body_content: body_content.value,
+                status: prediction.label,
+                risk_score: riskScore
             })
         })
         .then(response => response.json())
@@ -641,6 +726,7 @@ function analyzeEmail() {
         console.error("Prediction error:", err);
         hideLoader('emailLoader');
         hideEmailConfidenceBar();
+        resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
