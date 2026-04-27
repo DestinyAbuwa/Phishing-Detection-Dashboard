@@ -100,38 +100,43 @@ a { text-decoration: none; color: inherit; }
     font-size: inherit;
 }
 
-.nav a {
-    margin: 0;
-    padding: 6px 12px;
-    border-radius: var(--radius-pill);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--secondary-text-color);
-    transition: background 0.2s, color 0.2s;
-}
-
-.nav a:hover {
-    background: rgba(128, 128, 128, 0.1);
-    color: var(--main-text-color);
-}
-
+/* ── Shared nav button style ──
+   Home, Login, and Dark mode all use this bordered-pill look so the nav reads
+   as one consistent set of controls. Sign Up overrides this with a filled
+   accent fill (see .nav-auth-btn-primary below) since it's the primary CTA. */
+.nav a,
+.nav-auth-btn,
 .theme-toggle {
-    margin-left: 16px;
-    border: 1px solid var(--input-border-color);
-    border-radius: var(--radius-pill);
-    padding: 8px 16px;
-    background: var(--input-background);
-    color: var(--secondary-text-color);
     font-family: inherit;
     font-size: 13px;
     font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
     cursor: pointer;
     transition: all var(--transition);
+    background: transparent;
+    color: var(--secondary-text-color);
+    border: 1px solid var(--input-border-color);
 }
 
+/* Shared hover — accent-tinted border + bumped-up text color for all three. */
+.nav a:hover,
+.nav-auth-btn:hover,
 .theme-toggle:hover {
     color: var(--main-text-color);
     border-color: var(--accent);
+}
+
+/* Theme toggle is icon-only — square padding so the moon/sun SVG sits centered
+   in a circle (the shared pill border-radius rounds the square corners off).
+   margin-left keeps it separated from the auth cluster. */
+.theme-toggle {
+    margin-left: 16px;
+    padding: 8px;                   /* square instead of the wide 8px 16px pill */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;                 /* prevents the SVG from inflating the button height */
 }
 
 /* ── Hero banner — fixed behind the sliding content layer ── */
@@ -599,6 +604,48 @@ body[data-theme="dark"] .scroll-cue-label {
     letter-spacing: -0.01em;
 }
 
+/* SHAP feature summary inside the shared risk card. */
+.shap-feature-summary {
+    width: min(560px, 88%);
+    margin: 12px auto 0;
+    color: var(--main-text-color);
+    text-align: left;
+}
+
+.shap-feature-summary:empty {
+    display: none;
+}
+
+.shap-feature-summary p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    color: var(--secondary-text-color);
+}
+
+.shap-feature-summary ol {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
+}
+
+.shap-feature-summary li {
+    padding: 10px 12px;
+    border: 1px solid var(--section-divider-color);
+    border-radius: 10px;
+    background-color: var(--input-background);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.shap-feature-summary strong {
+    color: var(--secondary-text-color);
+}
+
 /* loading-bar label */
 #emailConfidenceBar .ldBar-label {
     font-size: 28px;
@@ -606,40 +653,54 @@ body[data-theme="dark"] .scroll-cue-label {
     color: var(--secondary-text-color);
 }
 
-/* ── Report Result modal ──
-   Fullscreen overlay centered on the page. Hidden by default via the HTML
+/* SHAP feature summary inside the shared risk card. */
+.shap-feature-summary {
+    width: min(560px, 88%);
+    margin: 12px auto 0;
+    color: var(--main-text-color);
+    text-align: left;
+}
+
+.shap-feature-summary:empty {
+    display: none;
+}
+
+.shap-feature-summary p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+}
+
+/* Fullscreen overlay centered on the page. Hidden by default via the HTML
    `hidden` attribute; JS toggles it open/closed. Uses a flex container so
    the dialog centers both horizontally and vertically at any viewport size. */
 .report-modal {
-    position: fixed;             /* covers the viewport, not the document */
-    inset: 0;                    /* shorthand for top/right/bottom/left: 0 */
-    z-index: 200;                /* above the nav (z-index: 100) */
+    position: fixed;
+    inset: 0;
+    z-index: 200;
     display: flex;
-    align-items: center;         /* vertical centering of the dialog */
-    justify-content: center;     /* horizontal centering of the dialog */
-    padding: 24px;               /* breathing room on small screens */
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
 }
 
 /* Respect the HTML `hidden` attribute even though we're using display:flex.
    Without this override, [hidden] is beaten by the .report-modal display rule. */
 .report-modal[hidden] { display: none; }
 
-/* Dimmed, blurred layer sitting behind the dialog.
-   It has data-close-modal in the HTML, so clicking it dismisses the modal. 
-    -webkit-backdrop-filter: blur(4px);  Safari support */
 .report-modal-backdrop {
     position: absolute;
     inset: 0;
     background: rgba(8, 12, 28, 0.55);
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
-/* The actual modal panel. Matches the checker-card aesthetic (same radius,
-   shadow, and theme variables) so it feels native to the rest of the UI. */
 .report-modal-dialog {
-    position: relative;          /* sits above .report-modal-backdrop */
+    position: relative;
     width: 100%;
-    max-width: 460px;            /* keeps the form readable on wide screens */
+    max-width: 460px;
     padding: 28px 28px 22px;
     border-radius: var(--radius-card);
     background-color: var(--card-background);
@@ -648,12 +709,10 @@ body[data-theme="dark"] .scroll-cue-label {
     color: var(--main-text-color);
     display: flex;
     flex-direction: column;
-    gap: 14px;                   /* consistent spacing between form rows */
+    gap: 14px;
     animation: report-modal-in 0.18s ease-out;
 }
 
-/* Subtle entrance animation — the dialog pops in with a small upward nudge
-   and fade instead of appearing abruptly. */
 @keyframes report-modal-in {
     from { opacity: 0; transform: translateY(8px) scale(0.98); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -672,18 +731,13 @@ body[data-theme="dark"] .scroll-cue-label {
     color: var(--secondary-text-color);
 }
 
-/* Row at the bottom of the modal holding Cancel + Submit.
-   flex-end pushes buttons to the right edge — standard modal convention
-   (primary action bottom-right, matches native OS dialogs). */
 .report-modal-actions {
     display: flex;
-    justify-content: flex-end;        /* right-align the button pair */
-    gap: 8px;                         /* space between Cancel and Submit */
-    margin-top: 8px;                  /* small separation from the subtitle above */
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
 }
 
-/* Shared base for both dialog buttons (shared sizing + transitions),
-   then the two variants below diverge on color only. */
 .report-modal-cancel,
 .report-modal-submit {
     font-family: inherit;
@@ -696,8 +750,6 @@ body[data-theme="dark"] .scroll-cue-label {
     border: 1px solid transparent;
 }
 
-/* Secondary "Cancel" — outlined only, recedes visually so the primary submit
-   action is the obvious target. */
 .report-modal-cancel {
     background-color: transparent;
     border-color: var(--input-border-color);
@@ -732,6 +784,516 @@ body[data-theme="dark"] .scroll-cue-label {
     gap: 6px;
 }
 
+/* ── Nav auth cluster ──
+   Wrapper that holds the Login + Sign Up buttons, kept apart from the page
+   nav links and the theme toggle by margin-left. The buttons themselves
+   inherit their base look from the shared .nav-auth-btn rule above. */
+.nav-auth {
+    display: flex;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+/* Sign Up overrides the shared bordered look with a solid accent fill —
+   it's the primary call-to-action, so it should visually stand out. */
+.nav-auth-btn-primary {
+    background-color: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.nav-auth-btn-primary:hover {
+    background-color: var(--button-hover-background);
+    border-color: var(--button-hover-background);
+    color: #fff;       /* keep text white on hover instead of inheriting the shared dark color */
+}
+
+/* ── Auth modal ──
+   Full-page overlay holding the login/signup popup. Scaled-down version of
+   the original two-column auth design (art panel left, form panel right).
+   All rules scoped under .auth-modal to avoid colliding with the rest of the app.
+
+   Local design tokens — only used inside the auth modal so it can preserve
+   its own distinctive look without affecting the NoPhish color system. */
+.auth-modal {
+    --auth-card: #ffffff;
+    --auth-ink: #0b0d1a;
+    --auth-ink-soft: #4b4f66;
+    --auth-accent: #54acd2;
+    --auth-accent-deep: #1e6b8c;
+    --auth-danger: #c2413a;
+    --auth-ring: rgba(84, 172, 210, 0.35);
+    /* Use the same fonts as the rest of the app so the modal feels native. */
+    --auth-display: "DM Sans", "Inter", sans-serif;
+    --auth-slab: "DM Sans", "Inter", sans-serif;
+
+    position: fixed;
+    inset: 0;
+    z-index: 250;                  /* above the report modal (z-index: 200) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    font-family: var(--auth-slab);
+    color: var(--auth-ink);
+}
+
+/* Honor the `hidden` attribute even though display is flex. */
+.auth-modal[hidden] { display: none; }
+
+/* Dimmed/blurred backdrop — clicking dismisses the modal. */
+.auth-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 28, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* Two-column card. The art panel and form panel slightly overlap to create
+   the layered look from the original design — that's the negative margins. */
+.auth-card {
+    position: relative;
+    width: min(880px, 100%);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 480px;
+    animation: auth-card-in 0.22s ease-out;
+}
+
+@keyframes auth-card-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Left panel — gradient background with hero text and the fish image.
+   Negative right margin lets the form panel overlap it slightly. */
+.auth-modal .auth-art {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    margin-right: -24px;
+    background: linear-gradient(180deg, #0a2540 0%, #155b8a 40%, #54acd2 100%);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+    z-index: 1;
+}
+
+/* Big "No Phish" headline on the left art panel.
+   Heavy weight (800) + tight letter-spacing matches the home-page headline
+   style — DM Sans needs to be bold to feel like a display font. */
+.auth-modal .auth-art h1 {
+    position: relative;
+    font-family: var(--auth-display);
+    font-size: 48px;
+    font-weight: 800;          /* DM Sans needs to be heavy to read as a headline */
+    line-height: 0.95;
+    margin: 0;
+    padding: 48px 36px 0;
+    color: #fff;
+    letter-spacing: -0.03em;   /* tighter spacing makes big sans-serif text feel more polished */
+}
+
+/* Small yellow caption above "No Phish" — like a tagline.
+   Uppercase + wide letter-spacing gives it a "small caps" badge feel. */
+.auth-modal .auth-art h1 span {
+    display: block;
+    color: #ffd75a;
+    font-family: var(--auth-slab);
+    font-weight: 600;          /* slightly bold so it reads clearly at small size */
+    font-size: 13px;           /* small — it's an eyebrow, not a headline */
+    letter-spacing: 0.12em;    /* wide spacing = small-caps look */
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.auth-modal .auth-tag {
+    position: relative;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--auth-slab);
+    font-weight: 300;
+    padding: 12px 36px 0;
+    font-size: 15px;
+    max-width: 320px;
+}
+
+.auth-modal .auth-scene {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.auth-modal .auth-scene img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Right panel — white form card. Negative left margin to overlap the art. */
+.auth-modal .auth-form-side {
+    position: relative;
+    background: var(--auth-card);
+    border-radius: 28px;
+    padding: 44px 40px 40px 56px;
+    margin: 24px 0 24px -24px;
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    z-index: 2;
+}
+
+/* Close (×) button in the top-right corner of the form panel. */
+.auth-modal .auth-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 0;
+    background: transparent;
+    color: var(--auth-ink-soft);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.auth-modal .auth-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--auth-ink);
+}
+
+/* The greeting at the top of the form — "Welcome back." or "Hi There,".
+   Same weight/spacing recipe as the home-page h2 so the modal feels native. */
+.auth-modal .auth-form-side h2 {
+    font-family: var(--auth-display);
+    font-size: 36px;
+    font-weight: 800;          /* matches the home-page headline weight */
+    line-height: 1.05;         /* slight breathing room — taller than the art h1 since this one is shorter */
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+}
+
+.auth-modal .auth-form-side h2 em {
+    font-style: normal;
+    color: var(--auth-accent);
+}
+
+.auth-modal .auth-subtitle {
+    margin: 0 0 8px;
+    color: var(--auth-ink-soft);
+    font-weight: 300;
+    font-size: 15px;
+}
+
+/* Floating-label fields. The label is absolutely positioned over the input
+   and shrinks/lifts when the input is focused or filled (see :focus + label). */
+.auth-modal .auth-field { position: relative; }
+
+/* Floating label that sits inside the input until the user types.
+   Muted color + medium weight so it reads like a placeholder, not a heading. */
+.auth-modal .auth-field label {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--auth-display);
+    font-size: 14px;
+    font-weight: 500;          /* medium — lighter than headings, heavier than body */
+    color: var(--auth-ink-soft);  /* grey so it looks like placeholder text */
+    pointer-events: none;      /* clicks pass through to the input below */
+    transition: all 0.18s ease;
+    background: transparent;
+    padding: 0 6px;
+}
+
+.auth-modal .auth-field input {
+    width: 100%;
+    font: inherit;
+    font-family: var(--auth-slab);
+    font-weight: 600;
+    font-size: 16px;
+    padding: 14px 22px;
+    border: 1.5px solid var(--auth-ink);
+    border-radius: 999px;
+    background: var(--auth-card);
+    color: var(--auth-ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-modal .auth-field input:focus {
+    border-color: var(--auth-accent-deep);
+    box-shadow: 0 0 0 4px var(--auth-ring);
+}
+
+/* The trick: when the input is focused OR has user-entered text, lift the label
+   to the top edge and shrink it. `:not(:placeholder-shown)` works because the
+   placeholder is a single space, so it's only "shown" when the field is empty. */
+.auth-modal .auth-field input:focus + label,
+.auth-modal .auth-field input:not(:placeholder-shown) + label {
+    top: 0;
+    transform: translateY(-50%) scale(0.8);
+    background: var(--auth-card);
+    color: var(--auth-accent-deep);
+}
+
+.auth-modal .auth-field.error input { border-color: var(--auth-danger); }
+
+.auth-modal .auth-field.error input:focus {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--auth-danger), transparent 75%);
+}
+
+.auth-modal .auth-err {
+    position: absolute;
+    left: 22px;
+    bottom: -18px;
+    font-size: 12px;
+    color: var(--auth-danger);
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.auth-modal .auth-field.error .auth-err {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Eye icon inside the password field — toggles visibility of the password text. */
+.auth-modal .auth-password-toggle {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    appearance: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--auth-ink-soft);
+}
+
+.auth-modal .auth-password-toggle:hover { color: var(--auth-ink); }
+
+.auth-modal .auth-password-toggle svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.auth-modal .auth-row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+/* Forgot-password link styled as text-only with an underline on hover. */
+/* "Forgot Password?" link under the password field.
+   Small + grey so it sits quietly — it's a secondary action, not a CTA. */
+.auth-modal .auth-forgot {
+    font-family: var(--auth-display);
+    font-size: 13px;           /* small — secondary action */
+    font-weight: 500;
+    color: var(--auth-ink-soft);  /* grey — recedes visually */
+    text-decoration: none;
+    border: 0;
+    border-bottom: 1px solid transparent;  /* invisible underline that fills in on hover */
+    cursor: pointer;
+    background: transparent;
+    padding: 2px 0;
+}
+
+.auth-modal .auth-forgot:hover { border-bottom-color: var(--auth-accent); }
+
+/* Primary submit button — dark pill that flips to accent on hover. */
+/* Big primary button (Login / Create Account / Send Reset Link).
+   Full-width pill, dark by default, flips to accent blue on hover. */
+.auth-modal .auth-btn {
+    appearance: none;          /* strip browser default button styling */
+    cursor: pointer;
+    width: 100%;               /* full-width to anchor the form */
+    padding: 14px 26px;
+    border-radius: 999px;      /* fully rounded = pill shape */
+    font-family: var(--auth-display);
+    font-size: 16px;
+    font-weight: 700;          /* bold so the CTA reads strongly */
+    letter-spacing: 0.01em;
+    background: var(--auth-ink);
+    color: var(--auth-card);
+    border: 0;
+    box-shadow: none;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s, color 0.2s, transform 0.08s;
+}
+
+.auth-modal .auth-btn:hover {
+    background: var(--auth-accent);
+    color: #fff;
+}
+
+.auth-modal .auth-btn:active { transform: translateY(2px); }
+
+/* Secondary button — outlined version (used for the Sign Up switch button). */
+.auth-modal .auth-btn-secondary {
+    background: transparent;
+    color: var(--auth-ink);
+    border: 1.5px solid var(--auth-ink);
+}
+
+.auth-modal .auth-btn-secondary:hover {
+    background: var(--auth-ink);
+    color: var(--auth-card);
+}
+
+.auth-modal .auth-btn[disabled] {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+/* "or" divider with horizontal lines on either side. */
+/* The "OR" separator between Login and Sign Up buttons.
+   Uppercase + spaced letters = small-caps style, matches labeling elsewhere in the app. */
+.auth-modal .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--auth-ink-soft);
+    font-family: var(--auth-display);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;     /* "or" → "OR" */
+    letter-spacing: 0.1em;         /* wide spacing so it reads as a divider, not a word */
+    margin: 4px 0;
+}
+
+.auth-modal .auth-divider::before,
+.auth-modal .auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--auth-ink);
+    opacity: 0.35;
+}
+
+/* Overlays that slide in over the form (forgot-password, reset-sent, success).
+   They sit absolutely positioned on top of the form and toggle .show. */
+.auth-modal .auth-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--auth-card);
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 44px 40px 40px 56px;
+    gap: 14px;
+    transform: translateY(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+}
+
+.auth-modal .auth-overlay.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Heading inside the slide-in overlays ("Reset password", "Check your email", "You're in").
+   Smaller than the main h2 since overlays are secondary screens. */
+.auth-modal .auth-overlay h3 {
+    font-family: var(--auth-display);
+    font-size: 26px;
+    font-weight: 700;          /* slightly lighter than main h2 — overlays are secondary */
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.auth-modal .auth-overlay p {
+    color: var(--auth-ink-soft);
+    font-weight: 300;
+    font-size: 15px;
+    margin: 0;
+}
+
+/* "← Back to login" link inside the overlays. */
+/* "← Back to login" text link inside the overlays.
+   Small and accent-colored — looks like a link, not a button. */
+.auth-modal .auth-back {
+    margin-top: 12px;
+    font-family: var(--auth-display);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--auth-accent-deep);
+    align-self: flex-start;        /* hugs the left edge instead of stretching full width */
+    padding: 0;
+}
+
+.auth-modal .auth-back:hover { text-decoration: underline; }
+
+/* Animated check-mark icon shown in the success overlays. */
+.auth-modal .auth-success-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--auth-accent), transparent 85%);
+    display: grid;
+    place-items: center;
+    margin-bottom: 4px;
+}
+
+.auth-modal .auth-success-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--auth-accent-deep);
+}
+
+/* Animates the check-mark stroke being "drawn" on appear. */
+.auth-modal .auth-check {
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: auth-draw 0.6s ease 0.1s forwards;
+}
+
+@keyframes auth-draw { to { stroke-dashoffset: 0; } }
+
+/* Stack the two columns vertically on narrow screens. */
+@media (max-width: 720px) {
+    .auth-modal { padding: 16px; }
+    .auth-card { grid-template-columns: 1fr; min-height: 0; }
+    .auth-modal .auth-art {
+        margin: 0;
+        border-radius: 24px 24px 0 0;
+        min-height: 180px;
+    }
+    .auth-modal .auth-form-side {
+        margin: -16px 0 0 0;
+        border-radius: 0 0 24px 24px;
+        padding: 32px 28px;
+    }
+    .auth-modal .auth-overlay {
+        padding: 32px 28px;
+        border-radius: 0 0 24px 24px;
+    }
+    .auth-modal .auth-art h1 { font-size: 40px; padding: 32px 28px 0; }
+    .auth-modal .auth-tag { padding: 10px 28px 0; font-size: 14px; }
+    .auth-modal .auth-form-side h2 { font-size: 32px; }
+}
+
 @media (max-width: 600px) {
     .menu-area { padding: 0 4%; }
 
@@ -744,6 +1306,18 @@ body[data-theme="dark"] .scroll-cue-label {
         border-radius: 14px;
         height: 60vh;
         min-height: 200px;
+    }
+    .page-content {
+        margin-top: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* Slightly tighter card width and padding for mobile. */
+    .Url,
+    .email-content {
+        width: min(92%, 680px);
+        padding: 22px;
     }
     .page-content {
         margin-top: 0;
