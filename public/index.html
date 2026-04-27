@@ -19,7 +19,14 @@
         <ul class="nav">
             <li><a href="#home">Home</a></li>
         </ul>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme">Dark mode</button>
+        <!-- Auth buttons open the shared auth modal, pre-selected to either Login or Sign Up. -->
+        <div class="nav-auth">
+            <button id="navLoginBtn" class="nav-auth-btn" type="button" data-auth-mode="login">Login</button>
+            <button id="navSignupBtn" class="nav-auth-btn nav-auth-btn-primary" type="button" data-auth-mode="signup">Sign Up</button>
+        </div>
+        <!-- Theme toggle — icon only. JS swaps the SVG between moon (light mode → click to go dark)
+             and sun (dark mode → click to go light). aria-label keeps it accessible. -->
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme"></button>
     </div>
 
     <!-- Hero — fish image strip -->
@@ -143,6 +150,103 @@
             <div class="report-modal-actions">
                 <button type="button" class="report-modal-cancel" data-close-modal>Cancel</button>
                 <button id="reportSubmitBtn" type="button" class="report-modal-submit">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth modal — opened by Login or Sign Up nav buttons.
+         Two-column layout (art panel + form), scaled smaller to fit as a popup.
+         Hidden by default; auth-modal.js toggles `is-open`. -->
+    <div id="authModal" class="auth-modal" hidden role="dialog" aria-modal="true"
+        aria-labelledby="authModalTitle">
+
+        <!-- Dimmed backdrop. Clicking it closes the modal. -->
+        <div class="auth-modal-backdrop" data-close-auth></div>
+
+        <!-- Two-column card: art on the left, form on the right. -->
+        <div class="auth-card" role="document">
+            <!-- Decorative left panel with hero text + fish image. -->
+            <div class="auth-art" aria-hidden="true">
+                <h1><span>Phishing detection, handled.</span>No Phish</h1>
+                <div class="auth-scene"><img src="images/fish.jpg" alt="" /></div>
+            </div>
+
+            <!-- Form panel. The h2 + button labels swap based on Login vs Sign Up mode. -->
+            <div class="auth-form-side">
+                <!-- Close button in the corner — uses data-close-auth like the backdrop. -->
+                <button type="button" class="auth-close" data-close-auth aria-label="Close">&times;</button>
+
+                <form class="auth-form" id="authForm" novalidate>
+                    <!-- data-auth-html lets JS swap this whole heading (with the <em> tag
+                         intact) when the user toggles between Login and Sign Up modes.
+                         Default content here is just a placeholder — JS overrides it. -->
+                    <h2 id="authModalTitle" data-auth-html="title">Welcome <em>back</em>.</h2>
+                    <p class="auth-subtitle" data-auth-text="subtitle">&nbsp;</p>
+
+                    <div class="auth-field" data-field="email">
+                        <input id="authEmail" type="email" name="email" placeholder=" " autocomplete="email" required />
+                        <label for="authEmail">Email</label>
+                        <span class="auth-err">Enter a valid email address</span>
+                    </div>
+
+                    <div class="auth-field" data-field="password" style="margin-top:4px">
+                        <input id="authPassword" type="password" name="password" placeholder=" "
+                            autocomplete="current-password" required minlength="6"/>
+                        <label for="authPassword">Password</label>
+                        <button type="button" class="auth-password-toggle" aria-label="Show password">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                        <span class="auth-err">Password must be at least 6 characters</span>
+                    </div>
+
+                    <div class="auth-row-between">
+                        <span></span>
+                        <button type="button" class="auth-forgot">Forgot Password?</button>
+                    </div>
+
+                    <button type="submit" class="auth-btn" data-auth-text="submit">Login</button>
+                    <div class="auth-divider">or</div>
+                    <button type="button" class="auth-btn auth-btn-secondary"
+                        data-auth-text="switch" data-auth-switch>Sign Up</button>
+                </form>
+
+                <!-- Forgot-password overlay. Slides in over the form. -->
+                <div class="auth-overlay" data-overlay="forgot">
+                    <h3>Reset password</h3>
+                    <p>Enter your email and we&rsquo;ll send you a reset link.</p>
+                    <div class="auth-field" data-field="reset-email" style="margin-top:8px">
+                        <input id="authResetEmail" type="email" placeholder=" " autocomplete="email" />
+                        <label for="authResetEmail">Email</label>
+                        <span class="auth-err">Enter a valid email address</span>
+                    </div>
+                    <button type="button" class="auth-btn auth-send-reset">Send reset link</button>
+                    <button type="button" class="auth-back">&larr; Back to login</button>
+                </div>
+
+                <!-- Reset-link-sent confirmation overlay. -->
+                <div class="auth-overlay" data-overlay="reset-sent">
+                    <div class="auth-success-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round"><path class="auth-check" d="M5 12l5 5 9-11"/></svg>
+                    </div>
+                    <h3>Check your email</h3>
+                    <p>If an account exists, a reset link is on its way.</p>
+                    <button type="button" class="auth-back">&larr; Back to login</button>
+                </div>
+
+                <!-- Successful login overlay. -->
+                <div class="auth-overlay" data-overlay="success">
+                    <div class="auth-success-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round"><path class="auth-check" d="M5 12l5 5 9-11"/></svg>
+                    </div>
+                    <h3>You&rsquo;re in.</h3>
+                    <p>Loading your dashboard…</p>
+                    <button type="button" class="auth-back">Log out</button>
+                </div>
             </div>
         </div>
     </div>
