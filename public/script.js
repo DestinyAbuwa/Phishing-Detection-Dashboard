@@ -518,6 +518,28 @@ function hideEmailConfidenceBar() {
     applyRiskStyle(0);
 }
 
+// Pre-flight: ask the server whether the current session is allowed to scan.
+// If not, open the auth modal in Login mode and resolve to false so the caller
+// aborts before running any prediction. Logged-in users always get true.
+function requireScanAllowance() {
+    return fetch('/api/can-scan', { credentials: 'same-origin' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.allowed) {
+                return true;
+            }
+            const navLoginBtn = document.getElementById('navLoginBtn');
+            if (navLoginBtn) {
+                navLoginBtn.click();
+            }
+            return false;
+        })
+        .catch(err => {
+            console.error('Allowance check failed:', err);
+            return true; // fail-open so a flaky network doesn't lock users out
+        });
+}
+
 // CHECK URL FUNCTION:
 // 1. Read the URL from the input.
 // 2. Ask the Python service for a phishing prediction.
@@ -540,7 +562,17 @@ function checkURL() {
         return;
     }
 
+    // Gate: stop here if the session is over the limit, so no prediction runs
+    // and no result UI appears. The helper opens the login modal when denied.
+    requireScanAllowance().then(allowed => {
+        if (!allowed) {
+            return;
+        }
+        runUrlScan(url, userUrl, resultDiv);
+    });
+}
 
+function runUrlScan(url, userUrl, resultDiv) {
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
@@ -649,6 +681,17 @@ function analyzeEmail() {
         return;
     }
 
+    // Gate: stop here if the session is over the limit, so no prediction runs
+    // and no result UI appears. The helper opens the login modal when denied.
+    requireScanAllowance().then(allowed => {
+        if (!allowed) {
+            return;
+        }
+        runEmailScan(sender, receiver, subject, body_content, resultDiv);
+    });
+}
+
+function runEmailScan(sender, receiver, subject, body_content, resultDiv) {
     // Added so the shared risk card appears inside the Email panel.
     mountRiskCard('email');
     hideEmailConfidenceBar();
@@ -1034,8 +1077,23 @@ function initializeAuthModal() {
         passwordToggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
     });
 
-    // Submit handler — frontend-only mock. Validates, fakes a 900ms request,
-    // then shows the success overlay. Backend will replace the setTimeout.
+    // Remember the password field's default error message so we can restore it
+    // after showing a server-side error like "Invalid email or password".
+    const passwordErrorElement = fieldPassword.querySelector('.auth-err');
+    const defaultPasswordErrorText = passwordErrorElement ? passwordErrorElement.textContent : '';
+
+    // Restoring the default validation message is what makes the per-field
+    // validation work correctly on subsequent submits after a server error.
+    inputPassword.addEventListener('input', () => {
+        if (passwordErrorElement) {
+            passwordErrorElement.textContent = defaultPasswordErrorText;
+        }
+    });
+
+    // Submit handler — calls /api/login or /api/signup depending on the active
+    // mode, then closes the modal on success (no overlay) so the user is back
+    // on the homepage. On failure, surfaces the server's error in the password
+    // field's error slot.
     authForm.addEventListener('submit', (event) => {
         event.preventDefault();
         if (!validateAuthForm()) {
@@ -1043,15 +1101,43 @@ function initializeAuthModal() {
         }
         const submitButton = authForm.querySelector('button[type="submit"]');
         const originalText = submitButton.textContent;
+        const endpoint = activeAuthMode === 'signup' ? '/api/signup' : '/api/login';
         submitButton.disabled = true;
         submitButton.textContent = activeAuthMode === 'signup' ? 'Creating account…' : 'Signing in…';
-        setTimeout(() => {
-            overlays.success.classList.add('show');
-            setTimeout(() => {
-                submitButton.disabled = false;
-                submitButton.textContent = originalText;
-            }, 200);
-        }, 900);
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: inputEmail.value.trim(),
+                password: inputPassword.value
+            })
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok) {
+                if (passwordErrorElement && data.error) {
+                    passwordErrorElement.textContent = data.error;
+                }
+                fieldPassword.classList.add('error');
+                return;
+            }
+            // Success — wipe the form, update the nav buttons, close the modal.
+            authForm.reset();
+            setAuthState(data.user || { email: inputEmail.value.trim() });
+            closeAuthModal();
+        })
+        .catch(err => {
+            console.error('Auth error:', err);
+            if (passwordErrorElement) {
+                passwordErrorElement.textContent = 'Network error — please try again.';
+            }
+            fieldPassword.classList.add('error');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        });
     });
 
     // The bottom button toggles login ↔ signup mode in-place.
@@ -1081,3 +1167,37 @@ function initializeAuthModal() {
 }
 
 initializeAuthModal();
+
+// ── Nav auth state ──
+// Toggles which buttons are visible in the nav based on whether someone is
+// logged in. When a user is present, hide Login + Sign Up and show Log out.
+// When no user, do the reverse.
+function setAuthState(user) {
+    const navLoginBtn = document.getElementById('navLoginBtn');
+    const navSignupBtn = document.getElementById('navSignupBtn');
+    const navLogoutBtn = document.getElementById('navLogoutBtn');
+
+    const loggedIn = Boolean(user);
+    if (navLoginBtn) navLoginBtn.hidden = loggedIn;
+    if (navSignupBtn) navSignupBtn.hidden = loggedIn;
+    if (navLogoutBtn) navLogoutBtn.hidden = !loggedIn;
+}
+
+// On page load, ask the server whether we already have a session — this keeps
+// the nav state correct after refreshes / new tabs.
+fetch('/api/session', { credentials: 'same-origin' })
+    .then(response => response.json())
+    .then(data => setAuthState(data.user))
+    .catch(err => console.error('Session check failed:', err));
+
+// Wire up the Log out button. Hits /api/logout, then flips the nav back to
+// the logged-out state. The server destroys the session, so the next /api/check
+// also resets the scan limit to 0.
+const navLogoutBtn = document.getElementById('navLogoutBtn');
+if (navLogoutBtn) {
+    navLogoutBtn.addEventListener('click', () => {
+        fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(() => setAuthState(null))
+            .catch(err => console.error('Logout failed:', err));
+    });
+}
