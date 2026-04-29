@@ -1,9 +1,11 @@
 import pandas as pd
 import joblib
+from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.naive_bayes import MultinomialNB
 from scipy.sparse import hstack
+
 
 # Load preprocessed email data
 df = pd.read_csv("cleaned_combined_email.csv")
@@ -14,12 +16,21 @@ numeric_features = [
     "body_length", "num_words", "subject_length", "urgent_word_count", "has_urgent_words"
 ]
 
-X_text = df["body"].fillna("")
+X_text = (df["subject"].fillna("") + " " + df["body"].fillna("")).str.strip()
 X_num = df[numeric_features]
 y = df["label"]
 
-# 1. TF-IDF on email body
-tfidf = TfidfVectorizer(stop_words="english", max_features=3000)
+# 1. TF-IDF on subject + email body.
+# The n-grams help phishing phrases like "verify account" carry more meaning than
+# single harmless words like "love" or "school".
+tfidf = TfidfVectorizer(
+    stop_words="english",
+    max_features=5000,
+    ngram_range=(1, 2),
+    min_df=2,
+    max_df=0.95,
+    sublinear_tf=True
+)
 X_tfidf = tfidf.fit_transform(X_text)
 
 # 2. MinMaxScaler on numeric features (keeps values in [0,1] for MultinomialNB)
