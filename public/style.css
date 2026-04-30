@@ -653,6 +653,21 @@ body[data-theme="dark"] .scroll-cue-label {
     color: var(--secondary-text-color);
 }
 
+/* Dark-mode brighten — the risk-card labels use --secondary-text-color, which
+   is muted by design but gets too dim on the dark page background. JS overrides
+   the colors after a scan, but these handle the default + pre-scan state and
+   the "Top decision features" heading which is purely CSS-driven. */
+body[data-theme="dark"] #emailConfidenceBar .ldBar-label,
+body[data-theme="dark"] .risk-level-text,
+body[data-theme="dark"] .shap-feature-summary p {
+    color: var(--main-text-color);
+}
+
+/* Replace the third-party white glow with a dark halo that separates the number from the wave. */
+body[data-theme="dark"] .ldBar.label-center > .ldBar-label {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.95), 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
 /* SHAP feature summary inside the shared risk card. */
 .shap-feature-summary {
     width: min(560px, 88%);
