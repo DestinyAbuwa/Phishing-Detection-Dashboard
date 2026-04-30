@@ -853,6 +853,30 @@ function initializeCheckerModeSwitch() {
     });
 }
 
+// Function to toggle the retracted/expanded state
+function toggleSidebarRetract() {
+    const sidebar = document.getElementById('historySidebar');
+    sidebar.classList.toggle('retracted');
+}
+
+// Update your flip logic to maintain the retracted state if it's already there
+function toggleSidebarSide() {
+    const sidebar = document.getElementById('historySidebar');
+    sidebar.classList.toggle('left');
+    sidebar.classList.toggle('right');
+}
+
+document.getElementById('sidebarToggle').addEventListener('click', toggleSidebarRetract);
+
+
+// Keep your existing flip listener
+document.getElementById('flipSidebarBtn').addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevents the sidebar from retracting when you just want to flip it
+    toggleSidebarSide();
+});
+
+
+
 function initializeLastSubmissionToggles() {
     if (urlLastToggleElement) {
         urlLastToggleElement.addEventListener('click', () => {
@@ -1184,11 +1208,14 @@ function setAuthState(user) {
     const navLoginBtn = document.getElementById('navLoginBtn');
     const navSignupBtn = document.getElementById('navSignupBtn');
     const navLogoutBtn = document.getElementById('navLogoutBtn');
+    const historySidebar = document.getElementById('historySidebar');
 
     const loggedIn = Boolean(user);
     if (navLoginBtn) navLoginBtn.hidden = loggedIn;
     if (navSignupBtn) navSignupBtn.hidden = loggedIn;
     if (navLogoutBtn) navLogoutBtn.hidden = !loggedIn;
+    // Show history sidebar only if logged in
+    if (historySidebar) historySidebar.hidden = !loggedIn;
 }
 
 // On page load, ask the server whether we already have a session — this keeps
