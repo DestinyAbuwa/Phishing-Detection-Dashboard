@@ -94,10 +94,16 @@ app.post('/api/check', (req, res) => {
 
     // SQL COMMAND: We prepare a 'query' to tell MySQL to put this URL into our table.
     // The '?' are placeholders to keep the data secure (prevents SQL Injection).
-    const sql = `INSERT INTO submissions 
-                 (url, sender_email, receiver_email, subject, email_body, risk_score, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [url, sender, receiver, subject, body_content, risk_score || 0, status || 'pending'];
+    // 1. Get the user ID from the session (if logged in)
+        const userId = req.session.user ? req.session.user.id : null;
+
+        // 2. Update the query to include user_id
+        const sql = `INSERT INTO submissions
+            (user_id, url, sender_email, receiver_email, subject, email_body, risk_score, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        // 3. Update the values array to match
+        const values = [userId, url, sender, receiver, subject, body_content, risk_score, 'pending'];
 
     // RUN THE QUERY: Send the command to the database
     db.query(sql, values, (err, result) => {

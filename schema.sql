@@ -21,6 +21,7 @@ CREATE TABLE users (
 -- SUBMISSIONS TABLE (Stores URLs scanned by the team)
 CREATE TABLE submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,  -- NULL allows for anonymous scans
     url TEXT,
     sender_email VARCHAR(255),
     receiver_email VARCHAR(255),
@@ -28,7 +29,8 @@ CREATE TABLE submissions (
     email_body TEXT,
     risk_score INT,
     status VARCHAR(50) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE reports (
