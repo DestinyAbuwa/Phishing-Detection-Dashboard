@@ -36,25 +36,25 @@ URL_FEATURE_NAMES = [
 ]
 
 URL_FEATURE_LABELS = {
-    "is_ip": "URL uses an IP address",
-    "has_at": "Contains @ symbol",
-    "is_redirect": "Contains redirect text",
-    "has_dash": "Contains dash",
-    "domain_len": "Domain length",
-    "nos_subdomain": "Number of subdomains",
-    "extension": "Domain extension"
+    "is_ip": "URL uses an IP address:",
+    "has_at": "Contains @ symbol (nullifies previous text in URL):",
+    "is_redirect": "Contains redirect text (directs to different URL):",
+    "has_dash": "Contains dash (scam trick to mimic domains):",
+    "domain_len": "Domain length (lengthy domains can be a scam trying to mimic legitimate domains):",
+    "nos_subdomain": "Number of subdomains (ex. www/https/etc.):",
+    "extension": "Domain extension:"
 }
 
 EMAIL_FEATURE_LABELS = {
-    "num_exclamations": "Exclamation marks",
-    "num_questions": "Question marks",
-    "num_dollar": "Dollar signs",
-    "num_email_addresses": "Email address count",
-    "body_length": "Email body length",
-    "num_words": "Word count",
-    "subject_length": "Subject length",
-    "urgent_word_count": "Urgent phrase count",
-    "has_urgent_words": "Urgent wording present"
+    "num_exclamations": "Number of Exclamation marks:",
+    "num_questions": "Number of Question marks:",
+    "num_dollar": "Number of Dollar signs: ",
+    "num_email_addresses": "Email address count:",
+    "body_length": "Email body length:",
+    "num_words": "Word count:",
+    "subject_length": "Subject length:",
+    "urgent_word_count": "Number of Urgent words:",
+    "has_urgent_words": "Urgent wording present:"
 }
 
 EMAIL_SCAM_KEYWORDS = [
@@ -189,11 +189,28 @@ def get_email_top_features(X_combined, numeric_feature_values, email_text, predi
 
     feature_values = {
         feature_name: count_text_feature_occurrences(email_text, feature_name)
-        for feature_name in email_tfidf.get_feature_names_out()
+        for feature_name in list(email_tfidf.get_feature_names_out())
     }
     feature_values.update(numeric_feature_values)
 
-    return get_top_shap_features(email_shap_values.values, feature_names, feature_values)
+    # --- FILTERING LOGIC ---
+    # Convert scam keywords to lowercase for reliable matching
+    allowed_keywords = [w.lower() for w in EMAIL_SCAM_KEYWORDS]
+    
+    filtered_indices = []
+    for i, name in enumerate(feature_names):
+        # Keep if it's a numeric feature (e.g., "num_exclamations")
+        if name in EMAIL_NUMERIC_FEATURE_NAMES:
+            filtered_indices.append(i)
+        # Keep if it's a word that appears in our scam keyword list
+        elif name.lower() in allowed_keywords:
+            filtered_indices.append(i)
+            
+    # Reconstruct the lists using only the filtered indices
+    final_names = [feature_names[i] for i in filtered_indices]
+    final_contributions = [email_shap_contributions[i] for i in filtered_indices]
+
+    return get_top_shap_features(final_contributions, final_names, feature_values)
 
 # Load URL blacklist
 BLACKLIST_FILE = "BLACKLIST-urls.txt"
