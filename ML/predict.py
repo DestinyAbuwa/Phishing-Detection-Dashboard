@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS          # <-- NEW
+from flask_cors import CORS         
 import joblib
 import numpy as np
+import pandas as pd
 import re
 import shap
 from scipy.sparse import hstack
@@ -9,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 app = Flask(__name__)
-CORS(app)                            # <-- NEW (allows all origins)
+CORS(app)                            # (allows all origins)
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -17,6 +18,13 @@ BASE_DIR = Path(__file__).resolve().parent
 email_tfidf = joblib.load(BASE_DIR / "email_tfidf.pkl")
 email_scaler = joblib.load(BASE_DIR / "email_scaler.pkl")
 email_model = joblib.load(BASE_DIR / "email_model.pkl")
+try:
+    email_sender_feature_encoders = joblib.load(BASE_DIR / "email_sender_feature_encoders.pkl")
+except FileNotFoundError:
+    email_sender_feature_encoders = {
+        "sender_email_domain": {"unknown": 0},
+        "sender_email_extension": {"unknown": 0}
+    }
 
 # Load URL models
 url_scaler = joblib.load(BASE_DIR / "url_scaler.pkl")
@@ -28,7 +36,24 @@ except FileNotFoundError:
 
 EMAIL_NUMERIC_FEATURE_NAMES = [
     "num_exclamations", "num_questions", "num_dollar", "num_email_addresses",
-    "body_length", "num_words", "subject_length", "urgent_word_count", "has_urgent_words"
+    "body_length", "num_words", "subject_length", "credential_threat_count",
+    "payment_threat_count", "reward_scam_count", "time_pressure_count",
+    "sender_email_domain", "sender_email_extension", "sender_domain_has_dash",
+    "sender_domain_subdomain_count"
+]
+
+EMAIL_EXPLANATION_FEATURE_NAMES = [
+    "num_exclamations", "num_questions", "num_dollar", "num_email_addresses",
+    "body_length", "num_words", "subject_length", "credential_threat_count",
+    "payment_threat_count", "reward_scam_count", "time_pressure_count",
+    "sender_email_extension", "sender_domain_has_dash", "sender_domain_subdomain_count"
+]
+
+LEGACY_EMAIL_NUMERIC_FEATURE_NAMES = [
+    "num_exclamations", "num_questions", "num_dollar", "num_email_addresses",
+    "body_length", "num_words", "subject_length", "urgent_word_count",
+    "sender_email_domain", "sender_email_extension", "sender_domain_has_dash",
+    "sender_domain_subdomain_count"
 ]
 
 URL_FEATURE_NAMES = [
@@ -53,16 +78,59 @@ EMAIL_FEATURE_LABELS = {
     "body_length": "Email body length:",
     "num_words": "Word count:",
     "subject_length": "Subject length:",
-    "urgent_word_count": "Number of Urgent words:",
-    "has_urgent_words": "Urgent wording present:"
+    "credential_threat_count": "Credential threat phrases:",
+    "payment_threat_count": "Payment threat phrases:",
+    "reward_scam_count": "Prize or reward scam phrases:",
+    "time_pressure_count": "Time pressure phrases:",
+    "sender_email_domain": "Sender email domain:",
+    "sender_email_extension": "Sender email extension:",
+    "sender_domain_has_dash": "Sender domain contains dash:",
+    "sender_domain_subdomain_count": "Sender domain subdomain count:"
 }
 
-EMAIL_SCAM_KEYWORDS = [
-    "urgent", "respond now", "asap", "act now", "limited time",
-    "verify account", "bank transfer", "claim prize", "lottery", "winner",
-    "password", "login", "sign in", "account suspended", "confirm identity",
-    "security alert", "payment", "invoice", "refund", "gift card", "wire transfer"
-]
+EMAIL_SCAM_KEYWORD_GROUPS = {
+    "credential_threat_count": [
+        "verify account", "verify your account", "confirm account", "confirm your account",
+        "verify your identity", "confirm identity", "account verification",
+        "account suspended", "account locked", "account disabled", "account on hold",
+        "recover account", "recovery phrase", "password", "password reset",
+        "reset your password", "login", "sign in", "signin", "secure login",
+        "security alert", "unauthorized activity", "unusual activity",
+        "two-factor", "2fa", "mfa", "one-time password", "otp", "authentication",
+        "validate account", "restore access", "access blocked", "identity verification"
+    ],
+    "payment_threat_count": [
+        "payment", "payment failed", "update your payment", "update payment",
+        "billing problem", "billing issue", "billing update", "invoice", "invoice overdue",
+        "past due", "pay now", "pay toll", "unpaid", "outstanding balance",
+        "wire transfer", "bank transfer", "credit card", "debit card", "card declined",
+        "refund", "refund pending", "tax refund", "zelle", "cash app", "venmo",
+        "paypal", "crypto", "bitcoin", "ethereum", "wallet", "seed phrase",
+        "gift card", "purchase failed", "subscription expired", "renew payment"
+    ],
+    "reward_scam_count": [
+        "claim prize", "claim reward", "winner", "lottery", "congratulations",
+        "you have been selected", "selected winner", "free gift", "gift card",
+        "reward", "prize", "prizes", "won", "you won", "win", "sweepstakes",
+        "giveaway", "bonus", "cash reward", "exclusive offer", "special offer",
+        "limited offer", "voucher", "coupon", "redeem now", "claim now"
+    ],
+    "time_pressure_count": [
+        "urgent", "respond now", "asap", "act now", "limited time",
+        "immediate action required", "action required", "final notice", "last warning",
+        "expires today", "expires soon", "within 24 hours", "24 hours",
+        "immediately", "right away", "now", "deadline", "before it expires",
+        "avoid suspension", "avoid closure", "legal action", "account closure",
+        "today only", "do not ignore", "time sensitive", "scan here", "click here",
+        "open attachment", "download attachment"
+    ]
+}
+
+EMAIL_URGENCY_KEYWORDS = sorted({
+    keyword
+    for keywords in EMAIL_SCAM_KEYWORD_GROUPS.values()
+    for keyword in keywords
+})
 
 REDIRECT_PARAMS = [
     "url", "redirect", "redirect_uri", "next",
@@ -74,7 +142,7 @@ NOMINAL_FEATURE_VALUES = {
     "has_at": {0: "No", 1: "Yes"},
     "is_redirect": {0: "No", 1: "Yes"},
     "has_dash": {0: "No", 1: "Yes"},
-    "has_urgent_words": {0: "No", 1: "Yes"}
+    "sender_domain_has_dash": {0: "No", 1: "Yes"}
 }
 
 url_shap_explainer = shap.TreeExplainer(url_model)
@@ -129,12 +197,47 @@ def count_text_feature_occurrences(text, feature_name):
     return len(re.findall(rf"\b{re.escape(feature_name)}\b", text))
 
 
+def count_keyword_matches(text, keywords):
+    text = text.lower()
+    return sum(text.count(keyword) for keyword in keywords)
+
+
+def get_email_scam_category_counts(text):
+    return {
+        feature_name: count_keyword_matches(text, keywords)
+        for feature_name, keywords in EMAIL_SCAM_KEYWORD_GROUPS.items()
+    }
+
+
+def get_email_domain(email_address):
+    match = re.search(r"@([A-Za-z0-9.-]+\.[A-Za-z]{2,})", str(email_address))
+    if not match:
+        return "unknown"
+    return match.group(1).lower().strip(".")
+
+
+def get_email_extension(domain):
+    if not domain or domain == "unknown" or "." not in domain:
+        return "unknown"
+    return domain.rsplit(".", 1)[-1]
+
+
+def encode_email_sender_feature(feature_name, value):
+    mapping = email_sender_feature_encoders.get(feature_name, {"unknown": 0})
+    return mapping.get(value, mapping.get("unknown", 0))
+
+
 def get_email_suspicion_score(body, subject, numeric_feature_values):
-    combined_text = f"{subject} {body}".lower()
-    scam_keyword_count = sum(combined_text.count(keyword) for keyword in EMAIL_SCAM_KEYWORDS)
+    credential_count = numeric_feature_values.get("credential_threat_count", 0)
+    payment_count = numeric_feature_values.get("payment_threat_count", 0)
+    reward_count = numeric_feature_values.get("reward_scam_count", 0)
+    time_pressure_count = numeric_feature_values.get("time_pressure_count", 0)
 
     score = 0
-    score += min(scam_keyword_count * 12, 36)
+    score += min(credential_count * 14, 35)
+    score += min(payment_count * 12, 30)
+    score += min(reward_count * 10, 25)
+    score += min(time_pressure_count * 10, 25)
     score += min(numeric_feature_values["num_exclamations"] * 5, 15)
     score += min(numeric_feature_values["num_dollar"] * 12, 24)
     score += min(numeric_feature_values["num_email_addresses"] * 8, 16)
@@ -172,8 +275,8 @@ def get_url_shap_values(X_scaled, predicted_class):
     return shap_values[0]
 
 
-def get_email_top_features(X_combined, numeric_feature_values, email_text, predicted_class):
-    feature_names = list(email_tfidf.get_feature_names_out()) + EMAIL_NUMERIC_FEATURE_NAMES
+def get_email_top_features(X_combined, numeric_feature_values, email_text, predicted_class, numeric_feature_names):
+    feature_names = list(email_tfidf.get_feature_names_out()) + numeric_feature_names
     class_index = list(email_model.classes_).index(predicted_class)
     other_class_index = 1 - class_index
 
@@ -197,17 +300,11 @@ def get_email_top_features(X_combined, numeric_feature_values, email_text, predi
     }
     feature_values.update(numeric_feature_values)
 
-    # --- FILTERING LOGIC ---
-    # Convert scam keywords to lowercase for reliable matching
-    allowed_keywords = [w.lower() for w in EMAIL_SCAM_KEYWORDS]
-    
+    # Display only engineered email fields in the UI
+    # word/phrase weights are confusing as user-facing explanations.
     filtered_indices = []
     for i, name in enumerate(feature_names):
-        # Keep if it's a numeric feature (e.g., "num_exclamations")
-        if name in EMAIL_NUMERIC_FEATURE_NAMES:
-            filtered_indices.append(i)
-        # Keep if it's a word that appears in our scam keyword list
-        elif name.lower() in allowed_keywords:
+        if name in numeric_feature_names and name in EMAIL_EXPLANATION_FEATURE_NAMES:
             filtered_indices.append(i)
             
     # Reconstruct the lists using only the filtered indices
@@ -264,6 +361,7 @@ def get_matching_whitelisted_domain(host):
             return trusted_domain
     return None
 
+
 def extract_url_features(url):
     """Extract the same features as in your url-preprocessing.py"""
     # Simple implementation – adjust according to your actual preprocessing
@@ -283,6 +381,7 @@ def predict_email():
     data = request.json
     body = data.get("body_content", "")
     subject = data.get("subject", "")
+    sender = data.get("sender", "")
 
     # Numeric features
     num_exclamations = body.count("!")
@@ -293,10 +392,14 @@ def predict_email():
     num_words = len(body.split())
     subject_length = len(subject)
 
-    urgent_words = ["urgent","respond now","asap","act now","limited time",
-                    "verify account","bank transfer","claim prize","lottery","winner"]
-    urgent_count = sum(body.lower().count(w) for w in urgent_words)
-    has_urgent = 1 if urgent_count > 0 else 0
+    email_text = f"{subject} {body}".strip()
+    scam_category_counts = get_email_scam_category_counts(email_text)
+    sender_domain = get_email_domain(sender)
+    sender_extension = get_email_extension(sender_domain)
+    sender_domain_encoded = encode_email_sender_feature("sender_email_domain", sender_domain)
+    sender_extension_encoded = encode_email_sender_feature("sender_email_extension", sender_extension)
+    sender_domain_has_dash = 1 if "-" in sender_domain else 0
+    sender_domain_subdomain_count = 0 if sender_domain == "unknown" else max(sender_domain.count(".") - 1, 0)
 
     numeric_feature_values = {
         "num_exclamations": num_exclamations,
@@ -306,16 +409,54 @@ def predict_email():
         "body_length": body_length,
         "num_words": num_words,
         "subject_length": subject_length,
-        "urgent_word_count": urgent_count,
-        "has_urgent_words": has_urgent
+        "credential_threat_count": scam_category_counts["credential_threat_count"],
+        "payment_threat_count": scam_category_counts["payment_threat_count"],
+        "reward_scam_count": scam_category_counts["reward_scam_count"],
+        "time_pressure_count": scam_category_counts["time_pressure_count"],
+        "sender_email_domain": sender_domain,
+        "sender_email_extension": sender_extension,
+        "sender_domain_has_dash": sender_domain_has_dash,
+        "sender_domain_subdomain_count": sender_domain_subdomain_count
     }
 
-    numeric_values = np.array([[
-        num_exclamations, num_questions, num_dollar, num_email_addresses,
-        body_length, num_words, subject_length, urgent_count, has_urgent
-    ]])
+    numeric_model_values = {
+        "num_exclamations": num_exclamations,
+        "num_questions": num_questions,
+        "num_dollar": num_dollar,
+        "num_email_addresses": num_email_addresses,
+        "body_length": body_length,
+        "num_words": num_words,
+        "subject_length": subject_length,
+        "credential_threat_count": scam_category_counts["credential_threat_count"],
+        "payment_threat_count": scam_category_counts["payment_threat_count"],
+        "reward_scam_count": scam_category_counts["reward_scam_count"],
+        "time_pressure_count": scam_category_counts["time_pressure_count"],
+        "sender_email_domain": sender_domain_encoded,
+        "sender_email_extension": sender_extension_encoded,
+        "sender_domain_has_dash": sender_domain_has_dash,
+        "sender_domain_subdomain_count": sender_domain_subdomain_count
+    }
 
-    email_text = f"{subject} {body}".strip()
+    expected_email_numeric_count = getattr(email_scaler, "n_features_in_", len(EMAIL_NUMERIC_FEATURE_NAMES))
+    numeric_feature_names = EMAIL_NUMERIC_FEATURE_NAMES[:expected_email_numeric_count]
+    if expected_email_numeric_count == len(LEGACY_EMAIL_NUMERIC_FEATURE_NAMES):
+        numeric_feature_names = LEGACY_EMAIL_NUMERIC_FEATURE_NAMES
+    if expected_email_numeric_count == 9:
+        # Backward compatibility for older saved models that still expect
+        # has_urgent_words before the sender metadata features existed.
+        numeric_feature_names = [
+            "num_exclamations", "num_questions", "num_dollar", "num_email_addresses",
+            "body_length", "num_words", "subject_length", "urgent_word_count",
+            "has_urgent_words"
+        ]
+        urgent_count = sum(scam_category_counts.values())
+        numeric_model_values["urgent_word_count"] = urgent_count
+        numeric_model_values["has_urgent_words"] = 1 if urgent_count > 0 else 0
+    numeric_values = pd.DataFrame([[
+        numeric_model_values[feature_name]
+        for feature_name in numeric_feature_names
+    ]], columns=numeric_feature_names)
+
     X_tfidf = email_tfidf.transform([email_text])
     X_num_scaled = email_scaler.transform(numeric_values)
     X_combined = hstack([X_tfidf, X_num_scaled])
@@ -324,7 +465,13 @@ def predict_email():
     prob = email_model.predict_proba(X_combined)[0].max()
     risk_score = get_email_risk_score(pred, prob, body, subject, numeric_feature_values)
     label = "Phishing" if risk_score >= 50 else "Legitimate"
-    top_features = get_email_top_features(X_combined, numeric_feature_values, email_text, pred)
+    top_features = get_email_top_features(
+        X_combined,
+        numeric_feature_values,
+        email_text,
+        pred,
+        numeric_feature_names
+    )
 
     return jsonify({
         "label": label,
@@ -339,7 +486,7 @@ def predict_url():
     url = data.get("url", "").lower()
     host = get_url_host(url)
 
-    # --- BLACKLIST CHECK ---
+    # BLACKLIST CHECK
     for blocked in url_blacklist:
         if blocked in url:
             top_features = [
@@ -358,7 +505,7 @@ def predict_url():
                 "top_features": top_features
             })
 
-    # --- TRUSTED DOMAIN CHECK ---
+    #TRUSTED DOMAIN CHECK
     whitelisted_domain = get_matching_whitelisted_domain(host)
     if whitelisted_domain:
         top_features = [
@@ -382,8 +529,8 @@ def predict_url():
             "top_features": top_features
         })
 
-    # --- Continue with normal ML prediction ---
-    features = extract_url_features(url)  # your existing feature extraction
+    # Continue with normal ML prediction
+    features = extract_url_features(url)
 
 
     print(f"DEBUG: Features for {url} -> {features}")
