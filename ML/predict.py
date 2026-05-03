@@ -4,7 +4,6 @@ import joblib
 import numpy as np
 import re
 import shap
-import math
 from scipy.sparse import hstack
 from pathlib import Path
 from urllib.parse import urlparse
@@ -33,7 +32,7 @@ EMAIL_NUMERIC_FEATURE_NAMES = [
 ]
 
 URL_FEATURE_NAMES = [
-    "is_ip", "has_at", "is_redirect", "has_dash", "domain_len", "nos_subdomain", "extension", "has_double_slash", "is_shortened", "https_in_domain", "entropy_score"
+    "is_ip", "has_at", "is_redirect", "has_dash", "domain_len", "nos_subdomain", "extension"
 ]
 
 URL_FEATURE_LABELS = {
@@ -42,12 +41,8 @@ URL_FEATURE_LABELS = {
     "is_redirect": "Contains redirect text (directs to different URL):",
     "has_dash": "Contains dash (scam trick to mimic domains):",
     "domain_len": "Domain length (lengthy domains can be a scam trying to mimic legitimate domains):",
-    "nos_subdomain": "Number of subdomains (ex. www/https/etc.):",
-    "extension": "Domain extension:",
-    "has_double_slash": "double slash after https:",
-    "is_shortened": "URL has been shortened:",
-    "https_in_domain": "https in domain (fake https):",
-    "entropy": "domain name randomness:",
+    "nos_subdomain": "Number of subdomains (ex. www./blog./en./etc.):",
+    "extension": "Domain extension:"
 }
 
 EMAIL_FEATURE_LABELS = {
@@ -74,11 +69,6 @@ REDIRECT_PARAMS = [
     "return", "target", "to", "goto"
 ]
 
-SHORTENER_DOMAINS = [
-    "bit.ly", "tinyurl.com", "t.co", "goo.gl", "rebrand.ly", 
-    "is.gd", "buff.ly", "ow.ly", "bl.ink"
-]
-
 NOMINAL_FEATURE_VALUES = {
     "is_ip": {0: "No", 1: "Yes"},
     "has_at": {0: "No", 1: "Yes"},
@@ -88,15 +78,6 @@ NOMINAL_FEATURE_VALUES = {
 }
 
 url_shap_explainer = shap.TreeExplainer(url_model)
-
-def get_entropy(text):
-    if not text:
-        return 0
-    # Count frequency of each character
-    probs = [float(text.count(c)) / len(text) for c in dict.fromkeys(list(text))]
-    # Calculate Shannon Entropy
-    entropy = - sum([p * math.log(p) / math.log(2.0) for p in probs])
-    return entropy
 
 def format_feature_name(feature_name):
     if feature_name in URL_FEATURE_LABELS:
@@ -295,11 +276,7 @@ def extract_url_features(url):
     domain_len = len(host)
     nos_subdomain = max(host.count(".") - 1, 0)
     extension_encoded = url_extension_encoder.get(extension, -1)
-    has_double_slash = 1 if url.lower().find("//", 7) != -1 else 0
-    is_shortened = 1 if any(s in host for s in SHORTENER_DOMAINS) else 0
-    https_in_domain = 1 if "https" in host else 0
-    entropy_score = get_entropy(host)
-    return [is_ip, has_at, is_redirect, has_dash, domain_len, nos_subdomain, extension_encoded, has_double_slash, is_shortened, https_in_domain, entropy_score]
+    return [is_ip, has_at, is_redirect, has_dash, domain_len, nos_subdomain, extension_encoded]
 
 @app.route("/predict_email", methods=["POST"])
 def predict_email():
