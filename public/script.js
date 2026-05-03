@@ -3,27 +3,349 @@ const emailConfidenceBarElement = document.getElementById('emailConfidenceBar');
 const riskCardElement = document.getElementById('riskCard');
 const riskLevelTextElement = document.getElementById('riskLevelText');
 const themeToggleButton = document.getElementById('themeToggle');
+const urlLastToggleElement = document.getElementById('urlLastToggle');
+const urlLastDetailsElement = document.getElementById('urlLastDetails');
+const urlLastContentElement = document.getElementById('urlLastContent');
+const emailLastToggleElement = document.getElementById('emailLastToggle');
+const emailLastDetailsElement = document.getElementById('emailLastDetails');
+const emailLastContentElement = document.getElementById('emailLastContent');
 // This heading lives inside the shared risk card, so we toggle it based on the active checker mode.
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
-// Risk labels and colors for the shared wave bar.
-// These do not depend on light/dark mode because risk severity should stay visually consistent.
-const RISK_STYLES = {
-    low: {
-        label: 'Low Risk',
-        color: '#1f8f4e',
-        trailColor: '#bfe7cf'
+const shapFeatureSummaryElement = document.getElementById('shapFeatureSummary');
+let latestShapTopFeatures = [];
+// Risk labels and colors for the shared wave bar. Two palettes — the light-mode
+// values were the original deep tones; dark-mode brightens the strokes so they
+// don't get swallowed by the dark page background, and dims the trail so it
+// doesn't read as harsh white-ish on dark.
+const RISK_STYLES_BY_THEME = {
+    light: {
+        low:    { label: 'Low Risk',    color: '#1f8f4e', trailColor: '#bfe7cf' },
+        medium: { label: 'Medium Risk', color: '#b7791f', trailColor: '#f3ddb7' },
+        high:   { label: 'High Risk',   color: '#7a1f1f', trailColor: '#e7bcbc' }
     },
-    medium: {
-        label: 'Medium Risk',
-        color: '#b7791f',
-        trailColor: '#f3ddb7'
-    },
-    high: {
-        label: 'High Risk',
-        color: '#7a1f1f',
-        trailColor: '#e7bcbc'
+    dark: {
+        low:    { label: 'Low Risk',    color: '#4caf6a', trailColor: '#1f3a2a' },
+        medium: { label: 'Medium Risk', color: '#f0a040', trailColor: '#3d2f1c' },
+        high:   { label: 'High Risk',   color: '#ef6b6b', trailColor: '#3d2222' }
     }
 };
+
+function getCurrentRiskPalette() {
+    return document.body.dataset.theme === 'dark'
+        ? RISK_STYLES_BY_THEME.dark
+        : RISK_STYLES_BY_THEME.light;
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[character]));
+}
+
+function formatFeatureValue(value) {
+    if (value === null || value === undefined || value === "") {
+        return "not available";
+    }
+
+    return value;
+}
+
+function updateShapFeatureSummary(prediction) {
+    if (!shapFeatureSummaryElement) {
+        return;
+    }
+
+    latestShapTopFeatures = prediction?.top_features || [];
+
+    if (!latestShapTopFeatures.length) {
+        shapFeatureSummaryElement.innerHTML = "";
+        return;
+    }
+
+    const featureItems = latestShapTopFeatures
+        .slice(0, 2)
+        .map((feature) => {
+            const featureName = escapeHTML(feature.feature);
+            const featureValue = escapeHTML(formatFeatureValue(feature.value));
+            return `<li><span>${featureName}</span> <strong>(${featureValue})</strong></li>`;
+        })
+        .join("");
+
+    shapFeatureSummaryElement.innerHTML = `
+        <p>Top decision features</p>
+        <ol>${featureItems}</ol>
+    `;
+}
+
+function clearShapFeatureSummary() {
+    latestShapTopFeatures = [];
+
+    if (shapFeatureSummaryElement) {
+        shapFeatureSummaryElement.innerHTML = "";
+    }
+}
+let lastUrlSubmission = null;
+let lastEmailSubmission = null;
+// Risk score currently displayed in the shared risk card. null means no scan
+// result is showing — used by applyTheme() to decide whether to repaint colors
+// on theme toggle.
+let lastRenderedRiskScore = null;
+
+// ── Report-result UI state ──
+// Each checker (URL, Email) has its own "Report Result" button. They share a
+// single confirmation popup — just "are you sure?" with Cancel/Submit.
+const urlReportButton = document.getElementById('urlReportBtn');
+const emailReportButton = document.getElementById('emailReportBtn');
+const reportModalElement = document.getElementById('reportModal');
+const reportSubmitButton = document.getElementById('reportSubmitBtn');
+
+// Stash the latest scan result for each checker so the eventual /api/report
+// POST can include the original verdict + submission that was reported.
+// Shape: { riskScore, riskLabel, submission: { url } or { sender, receiver, ... } }
+const lastScanResult = { url: null, email: null };
+
+// Which checker opened the modal. Set when the modal opens, cleared when it closes.
+// We need this because the modal itself is shared — it doesn't know whether the
+// user clicked Report on the URL or Email panel until we tell it.
+let activeReportMode = null;
+
+function showLoader(loaderId) {
+    const loaderElement = document.getElementById(loaderId);
+    if (!loaderElement) {
+        return;
+    }
+
+    loaderElement.classList.add('is-loading');
+}
+
+function hideLoader(loaderId) {
+    const loaderElement = document.getElementById(loaderId);
+    if (!loaderElement) {
+        return;
+    }
+
+    loaderElement.classList.remove('is-loading');
+}
+
+function createLastSubmissionItem(label, value, multiline = false) {
+    const detailItem = document.createElement('div');
+    detailItem.className = 'last-submission-item';
+
+    const detailLabel = document.createElement('span');
+    detailLabel.className = 'last-submission-item-label';
+    detailLabel.textContent = label;
+
+    const detailValue = document.createElement('p');
+    detailValue.className = `last-submission-item-value${multiline ? ' is-multiline' : ''}`;
+    detailValue.textContent = value;
+
+    detailItem.appendChild(detailLabel);
+    detailItem.appendChild(detailValue);
+    return detailItem;
+}
+
+function getLastSubmissionElements(mode) {
+    if (mode === 'url') {
+        return {
+            toggleElement: urlLastToggleElement,
+            detailsElement: urlLastDetailsElement,
+            contentElement: urlLastContentElement
+        };
+    }
+
+    return {
+        toggleElement: emailLastToggleElement,
+        detailsElement: emailLastDetailsElement,
+        contentElement: emailLastContentElement
+    };
+}
+
+function renderLastSubmission(mode) {
+    const { toggleElement, detailsElement, contentElement } = getLastSubmissionElements(mode);
+    const submission = mode === 'url' ? lastUrlSubmission : lastEmailSubmission;
+
+    if (!toggleElement || !detailsElement || !contentElement) {
+        return;
+    }
+
+    if (!submission) {
+        toggleElement.hidden = true;
+        toggleElement.setAttribute('aria-expanded', 'false');
+        detailsElement.hidden = true;
+        contentElement.innerHTML = '';
+        return;
+    }
+
+    toggleElement.hidden = false;
+    toggleElement.setAttribute('aria-expanded', 'false');
+    detailsElement.hidden = true;
+    contentElement.innerHTML = '';
+
+    if (mode === 'url') {
+        contentElement.textContent = submission.url;
+        return;
+    }
+
+    contentElement.appendChild(createLastSubmissionItem('Sender', submission.sender));
+    contentElement.appendChild(createLastSubmissionItem('Receiver', submission.receiver));
+    contentElement.appendChild(createLastSubmissionItem('Subject', submission.subject));
+    contentElement.appendChild(createLastSubmissionItem('Email body', submission.body_content, true));
+}
+
+function toggleLastSubmission(mode) {
+    const { toggleElement, detailsElement } = getLastSubmissionElements(mode);
+
+    if (!toggleElement || !detailsElement || toggleElement.hidden) {
+        return;
+    }
+
+    const isExpanded = toggleElement.getAttribute('aria-expanded') === 'true';
+    toggleElement.setAttribute('aria-expanded', String(!isExpanded));
+    detailsElement.hidden = isExpanded;
+}
+
+function setLastSubmission(mode, submission) {
+    if (mode === 'url') {
+        lastUrlSubmission = submission;
+    } else {
+        lastEmailSubmission = submission;
+    }
+
+    renderLastSubmission(mode);
+}
+
+// Small lookup helper so we don't repeat the mode-to-element mapping everywhere.
+function getReportButton(mode) {
+    return mode === 'url' ? urlReportButton : emailReportButton;
+}
+
+// Puts BOTH report buttons back in their pre-scan state:
+//   - hidden (because there's nothing to report until a scan has run)
+//   - label reset from "✓ Reported" back to "Report Result"
+//   - re-enabled and stripped of the green "is-reported" style
+// Called when the user switches checker tabs, since switching invalidates
+// whatever was on screen.
+function resetReportButtons() {
+    ['url', 'email'].forEach((mode) => {
+        const button = getReportButton(mode);
+        if (!button) {
+            return;
+        }
+        button.hidden = true;
+        button.classList.remove('is-reported');
+        button.textContent = 'Report Result';
+        button.disabled = false;
+    });
+}
+
+// Called right after a scan finishes. Does two things:
+//   1. Remembers the scan result so the modal can prefill with it later.
+//   2. Reveals the "Report Result" button in that panel.
+// Also resets any stale "✓ Reported" state in case the user ran a previous
+// scan, reported it, and is now scanning again.
+function showReportButton(mode, scanResult) {
+    lastScanResult[mode] = scanResult;
+    const button = getReportButton(mode);
+    if (!button) {
+        return;
+    }
+    button.hidden = false;
+    button.classList.remove('is-reported');
+    button.textContent = 'Report Result';
+    button.disabled = false;
+}
+
+// Opens the shared confirmation popup for whichever checker triggered it.
+function openReportModal(mode) {
+    if (!reportModalElement) {
+        return;
+    }
+    // Remember which checker opened this modal. handleReportSubmit reads
+    // this to know which scan result to include in the payload.
+    activeReportMode = mode;
+    reportModalElement.hidden = false;
+}
+
+// Hides the modal and forgets which checker opened it.
+// Triggered by Cancel, backdrop click, Escape key, or successful submit.
+function closeReportModal() {
+    if (!reportModalElement) {
+        return;
+    }
+    reportModalElement.hidden = true;
+    activeReportMode = null;
+}
+
+// Builds the report payload, logs it, and flips the button into the "Reported" state.
+// Frontend-only for now — when the backend is wired, replace the console.log
+// with a fetch('/api/report', { method: 'POST', body: JSON.stringify(payload) }).
+function handleReportSubmit() {
+    // Guard: if somehow the modal is open without an active mode, bail.
+    if (!activeReportMode) {
+        return;
+    }
+    const mode = activeReportMode;
+    const scan = lastScanResult[mode];
+
+    // Build the payload. This is the shape the backend will receive once
+    // /api/report exists — structured now so no frontend rewrite is needed later.
+    const payload = {
+        mode,                                              // 'url' or 'email'
+        originalRiskScore: scan ? scan.riskScore : null,   // what the model said (number %)
+        originalRiskLabel: scan ? scan.riskLabel : null,   // what the model said (label)
+        submission: scan ? scan.submission : null,         // the original URL or email fields
+        reportedAt: new Date().toISOString()               // client-side timestamp
+    };
+    console.log('Report submitted:', payload);
+
+    // Turn the button into the success-state "✓ Reported" pill and lock it
+    // so the user can't double-submit the same report.
+    const button = getReportButton(mode);
+    if (button) {
+        button.textContent = '✓ Reported';
+        button.classList.add('is-reported');
+        button.disabled = true;
+    }
+
+    closeReportModal();
+}
+
+// Wires up every way the modal can be opened, closed, or submitted.
+// Called once on page load.
+function initializeReportModal() {
+    // Clicking either "Report Result" button opens the shared modal,
+    // tagged with which checker it came from.
+    if (urlReportButton) {
+        urlReportButton.addEventListener('click', () => openReportModal('url'));
+    }
+    if (emailReportButton) {
+        emailReportButton.addEventListener('click', () => openReportModal('email'));
+    }
+
+    // Submit button inside the modal.
+    if (reportSubmitButton) {
+        reportSubmitButton.addEventListener('click', handleReportSubmit);
+    }
+
+    // Any element inside the modal with data-close-modal will dismiss it
+    // (the Cancel button and the backdrop both use this attribute).
+    if (reportModalElement) {
+        reportModalElement.querySelectorAll('[data-close-modal]').forEach((element) => {
+            element.addEventListener('click', closeReportModal);
+        });
+    }
+
+    // Escape key also closes the modal — standard accessible-dialog behavior.
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && reportModalElement && !reportModalElement.hidden) {
+            closeReportModal();
+        }
+    });
+}
 
 // Switches the result message between the neutral/default style and the error style.
 function setResultState(resultDiv, state) {
@@ -35,14 +357,29 @@ function setResultState(resultDiv, state) {
     resultDiv.classList.add(state === 'error' ? 'result-error' : 'result-default');
 }
 
+// Moon and sun SVGs shown inside the theme toggle button.
+// Moon = "click to switch to dark"; sun = "click to switch to light".
+// Both use currentColor so they pick up whatever color the button text is set to.
+const THEME_ICON_MOON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>`;
+const THEME_ICON_SUN = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`;
+
 // Applies either the light or dark theme by changing body[data-theme].
 // CSS listens for this attribute and swaps the color variables automatically.
 function applyTheme(theme) {
     document.body.dataset.theme = theme;
 
-    // The button label tells the user what the next click will do.
+    // Swap the icon to show what the next click will do:
+    //   light mode → moon (click to go dark)
+    //   dark mode  → sun  (click to go light)
     if (themeToggleButton) {
-        themeToggleButton.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+        themeToggleButton.innerHTML = theme === 'dark' ? THEME_ICON_SUN : THEME_ICON_MOON;
+    }
+
+    // If a scan result is currently showing, repaint the wave/labels with the
+    // new theme's palette. Without this the card stays frozen at the colors
+    // applied at scan time (everything is set as inline styles by JS).
+    if (lastRenderedRiskScore !== null) {
+        applyRiskStyle(lastRenderedRiskScore, document.getElementById('result'));
     }
 }
 
@@ -72,18 +409,21 @@ function initializeThemeToggle() {
 }
 
 // Added to group numeric scores into your Low / Medium / High risk ranges.
+// Reads the current theme on every call so toggling dark/light updates the
+// palette for the next scan.
 function getRiskStyle(score) {
     const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    const palette = getCurrentRiskPalette();
 
     if (normalizedScore <= 39) {
-        return RISK_STYLES.low;
+        return palette.low;
     }
 
     if (normalizedScore <= 69) {
-        return RISK_STYLES.medium;
+        return palette.medium;
     }
 
-    return RISK_STYLES.high;
+    return palette.high;
 }
 
 // Keeps the result text, wave bar, and risk label in sync visually.
@@ -142,6 +482,7 @@ function setEmailConfidenceBar(value) {
     }
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     const normalizedValue = Math.max(0, Math.min(100, Number(value) || 0));
+    lastRenderedRiskScore = normalizedValue;
     bar.set(normalizedValue);
 }
 
@@ -187,11 +528,35 @@ function hideEmailConfidenceBar() {
     if (riskCardElement) {
         riskCardElement.style.display = 'none';
     }
+    clearShapFeatureSummary();
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     bar.set(0, false);
+    lastRenderedRiskScore = null;
 
     // Reset the bar styling back to the "low/default" appearance after hiding it.
     applyRiskStyle(0);
+}
+
+// Pre-flight: ask the server whether the current session is allowed to scan.
+// If not, open the auth modal in Login mode and resolve to false so the caller
+// aborts before running any prediction. Logged-in users always get true.
+function requireScanAllowance() {
+    return fetch('/api/can-scan', { credentials: 'same-origin' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.allowed) {
+                return true;
+            }
+            const navLoginBtn = document.getElementById('navLoginBtn');
+            if (navLoginBtn) {
+                navLoginBtn.click();
+            }
+            return false;
+        })
+        .catch(err => {
+            console.error('Allowance check failed:', err);
+            return true; // fail-open so a flaky network doesn't lock users out
+        });
 }
 
 // CHECK URL FUNCTION:
@@ -216,59 +581,85 @@ function checkURL() {
         return;
     }
 
-    // Update the shared heading so the risk card shows which URL was just tested.
-    document.getElementById('testedUrlHeading').textContent = `Tested URL: ${url}`;
+    // Gate: stop here if the session is over the limit, so no prediction runs
+    // and no result UI appears. The helper opens the login modal when denied.
+    requireScanAllowance().then(allowed => {
+        if (!allowed) {
+            return;
+        }
+        runUrlScan(url, userUrl, resultDiv);
+    });
+}
 
+function runUrlScan(url, userUrl, resultDiv) {
     // UI FEEDBACK: Let the user know the process has started
     // Added so the shared risk card appears inside the URL panel.
     mountRiskCard('url');
-    
-    // Show the risk bar immediately at 0 so the user gets instant visual feedback.
-    setEmailConfidenceBar(0);
+    hideEmailConfidenceBar();
+    // Hide the report button during the scan — it'll be re-shown on success.
+    // This also clears any leftover "✓ Reported" state from a previous scan,
+    // so the button comes back fresh if the user re-scans the same URL.
+    const urlReportBtn = getReportButton('url');
+    if (urlReportBtn) {
+        urlReportBtn.hidden = true;
+        urlReportBtn.classList.remove('is-reported');
+        urlReportBtn.textContent = 'Report Result';
+        urlReportBtn.disabled = false;
+    }
+    showLoader('urlLoader');
 
     // Ask the Python ML service for the phishing prediction.
-    fetch('http://localhost:5000/predict_url', {
+    // Promise.all ensures the loader shows for at least 700ms regardless of fetch speed.
+    const urlFetch = fetch('http://localhost:5000/predict_url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })
-    })
-    .then(response => response.json())
-    .then(prediction => {
+    }).then(response => response.json());
+
+    
+    Promise.all([urlFetch, new Promise(resolve => setTimeout(resolve, 700))])
+    .then(([prediction]) => {
+        hideLoader('urlLoader');
         // Convert the backend response into one normalized risk score for the UI.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        updateShapFeatureSummary(prediction);
+        setLastSubmission('url', { url });
+        // Reveal the Report Result button and remember the verdict + submission,
+        // so if the user opens the modal we can prefill it with accurate context.
+        showReportButton('url', {
+            riskScore,
+            riskLabel: getRiskStyle(riskScore).label,
+            submission: { url }
+        });
        
         // Send the checked URL to the Node backend so it can be stored in the database.
         fetch('/api/check', {
-            method: 'POST', // We use POST because we are sending data
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 url: url,
                 status: prediction.label,
                 risk_score: riskScore // "Phishing" or "Legitimate"
-             }) // Convert the URL into a JSON string // The number for your risk_score column
+             }) // The number for your risk_score column
         })
-        .then(response => response.json()) // Wait for the server to send back a JSON response
+        .then(response => response.json())
         .then(data => {
-            
-            // // If the server says redirect is true, send them to login
-            // if (data.redirect) {
-            //     window.location.href = "login.html"; 
-            //     return;
-            // }
-            // POSTPONED
+            // If the server says redirect is true, the user has hit the scan limit —
+            // open the in-page auth modal in Login mode instead of navigating away.
+            if (data.redirect) {
+                const navLoginBtn = document.getElementById('navLoginBtn');
+                if (navLoginBtn) {
+                    navLoginBtn.click();
+                }
+                return;
+            }
 
-
-
-            // Keep the prediction message, but log the database save
             console.log("Submission ID from Database:", data.submissionId);
-            // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
         })
         .catch(err => {
-            // ERROR HANDLING: Runs if the database save fails
             console.error("Storage Error:", err);
-            // We don't overwrite the prediction result, just log the error
         });
 
         // Clear the input field
@@ -277,6 +668,7 @@ function checkURL() {
     .catch(err => {
         // If the Python service is unavailable, show the error style instead of the default style.
         console.error("Prediction error:", err);
+        hideLoader('urlLoader');
         hideEmailConfidenceBar();
         resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
@@ -308,13 +700,34 @@ function analyzeEmail() {
         return;
     }
 
+    // Gate: stop here if the session is over the limit, so no prediction runs
+    // and no result UI appears. The helper opens the login modal when denied.
+    requireScanAllowance().then(allowed => {
+        if (!allowed) {
+            return;
+        }
+        runEmailScan(sender, receiver, subject, body_content, resultDiv);
+    });
+}
+
+function runEmailScan(sender, receiver, subject, body_content, resultDiv) {
     // Added so the shared risk card appears inside the Email panel.
     mountRiskCard('email');
-    // Show the bar immediately so the user sees the email is being processed.
-    setEmailConfidenceBar(0);
+    hideEmailConfidenceBar();
+    // Hide the report button during the scan — mirrors the URL flow above.
+    // Also wipes any prior "✓ Reported" state so the next verdict is reportable.
+    const emailReportBtn = getReportButton('email');
+    if (emailReportBtn) {
+        emailReportBtn.hidden = true;
+        emailReportBtn.classList.remove('is-reported');
+        emailReportBtn.textContent = 'Report Result';
+        emailReportBtn.disabled = false;
+    }
+    showLoader('emailLoader');
 
     // Ask the Python ML service for the email phishing prediction.
-    fetch('http://localhost:5000/predict_email', {
+    // Promise.all ensures the loader shows for at least 700ms regardless of fetch speed.
+    const emailFetch = fetch('http://localhost:5000/predict_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -323,20 +736,39 @@ function analyzeEmail() {
             subject: subject.value,
             body_content: body_content.value
         })
-    })
-    .then(response => response.json())
-    .then(prediction => {
+    }).then(response => response.json());
+
+    Promise.all([emailFetch, new Promise(resolve => setTimeout(resolve, 700))])
+    .then(([prediction]) => {
+        hideLoader('emailLoader');
         // Convert the model response into the shared UI risk score.
         const riskScore = getRiskScore(prediction).toFixed(1);
         setEmailConfidenceBar(riskScore);
         applyRiskStyle(riskScore, resultDiv);
+        // Grab the email fields once into a single object so we can reuse it
+        // for both the "last submission" dropdown and the report button state.
+        const emailSubmission = {
+            sender: sender.value,
+            receiver: receiver.value,
+            subject: subject.value,
+            body_content: body_content.value
+        };
+        setLastSubmission('email', emailSubmission);
+        // Reveal the Report Result button and stash the full email submission
+        // so the eventual backend call can include exactly what was analyzed.
+        showReportButton('email', {
+            riskScore,
+            riskLabel: getRiskStyle(riskScore).label,
+            submission: emailSubmission
+        });
+        updateShapFeatureSummary(prediction);
         
         // Store the analyzed email submission through the existing Node backend.
         fetch('/api/check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                url: "", // Since this is an email, the URL can be empty
+                url: "",
                 sender: sender.value,
                 receiver: receiver.value,
                 subject: subject.value,
@@ -347,13 +779,19 @@ function analyzeEmail() {
         })
         .then(response => response.json())
         .then(data => {
-            // Keep the prediction message, but log the database save
+            // Same scan-limit handling as the URL flow — open the auth modal in Login mode.
+            if (data.redirect) {
+                const navLoginBtn = document.getElementById('navLoginBtn');
+                if (navLoginBtn) {
+                    navLoginBtn.click();
+                }
+                return;
+            }
+
             console.log("Database ID:", data.submissionId);
-            // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
         })
         .catch(err => {
             console.error("Email Submission Error:", err);
-            // We don't overwrite the prediction result, just log the error
         });
 
         // Clear the form once the prediction and storage calls finish.
@@ -365,6 +803,7 @@ function analyzeEmail() {
     .catch(err => {
         // Put the result message into the error theme class if the prediction service fails.
         console.error("Prediction error:", err);
+        hideLoader('emailLoader');
         hideEmailConfidenceBar();
         resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
@@ -403,6 +842,9 @@ function setCheckerMode(mode) {
 
     // Hide the risk bar until the next scan starts.
     hideEmailConfidenceBar();
+    // Switching tabs means the visible scan result is gone, so any "report this
+    // result" button no longer has a result to attach to. Hide them both.
+    resetReportButtons();
 
 }
 
@@ -422,8 +864,359 @@ function initializeCheckerModeSwitch() {
     });
 }
 
+function initializeLastSubmissionToggles() {
+    if (urlLastToggleElement) {
+        urlLastToggleElement.addEventListener('click', () => {
+            toggleLastSubmission('url');
+        });
+    }
+
+    if (emailLastToggleElement) {
+        emailLastToggleElement.addEventListener('click', () => {
+            toggleLastSubmission('email');
+        });
+    }
+}
+
+// Parallax the fish image inside the fixed hero as the user scrolls.
+// The hero itself is fixed — the content layer slides up over it.
+// The image drifts upward slower than the content, with a slight zoom for depth.
+function initHeroScroll() {
+    const heroImg = document.querySelector('.hero-img');
+    const hero = document.querySelector('.hero-banner');
+    const scrollCue = document.querySelector('.scroll-cue');
+    if (!heroImg || !hero) return;
+
+    let ticking = false;
+    let lastY = 0;
+
+    function update() {
+        const vh = window.innerHeight;
+        const progress = Math.min(lastY / vh, 1);
+
+        // Classic parallax: image drifts up at 0.5x scroll speed
+        const translateY = -lastY * 0.5;
+        // Subtle zoom as user scrolls — adds cinematic depth
+        const scale = 1 + progress * 0.08;
+
+        heroImg.style.transform = `translate3d(0, ${translateY}px, 0) scale(${scale})`;
+        // Hero fades slightly as the content layer covers it — softens the transition
+        hero.style.opacity = String(1 - progress * 0.35);
+
+        // Fade scroll cue out quickly once the user starts scrolling
+        if (scrollCue) {
+            scrollCue.style.opacity = String(Math.max(0, 1 - lastY / 120));
+        }
+
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        lastY = window.scrollY;
+        if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
 // Initialize theme handling first so the page colors are correct immediately.
 initializeThemeToggle();
 
 // Then initialize the checker panel tabs.
 initializeCheckerModeSwitch();
+
+// Finally, wire up the small "last submission" toggles inside each panel.
+initializeLastSubmissionToggles();
+
+// Wire up the Report Result modal (button clicks, cancel, submit, escape-to-close).
+initializeReportModal();
+
+// Hero scroll-shrink animation.
+initHeroScroll();
+
+// ── Auth modal (Login / Sign Up popup) ──
+// Ported from the standalone login page. Reuses the same modal pattern as the
+// report modal: hidden by default, opened by nav buttons, dismissed via
+// data-close-auth elements (backdrop, × button) or the Escape key.
+function initializeAuthModal() {
+    const authModal = document.getElementById('authModal');
+    if (!authModal) {
+        return;
+    }
+
+    // Eye-icon SVGs swapped when the user toggles password visibility.
+    const PASSWORD_EYE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const PASSWORD_EYE_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 4.1M6.6 6.6A18 18 0 0 0 2 12s3.5 7 10 7a10.9 10.9 0 0 0 5.4-1.4"/><path d="m3 3 18 18"/><path d="M10.5 10.5a3 3 0 0 0 4.2 4.2"/></svg>`;
+
+    // Per-mode UI text. The form's title / button labels swap based on which
+    // nav button (Login vs Sign Up) opened the modal.
+    //
+    // Field meanings:
+    //   title    — HTML for the big heading. The <em> word gets the accent blue
+    //              (defined in CSS as `.auth-form-side h2 em { color: ... }`).
+    //   subtitle — plain-text line under the heading. Empty string for login.
+    //   submit   — label on the primary button at the bottom of the form.
+    //   switch   — label on the secondary button that flips between modes.
+    const AUTH_MODE_TEXT = {
+        login: {
+            title: 'Welcome <em>back</em>.',
+            subtitle: '',
+            submit: 'Login',
+            switch: 'Sign Up'
+        },
+        signup: {
+            title: 'Hi <em>There</em>.',
+            subtitle: 'Create your account to continue scanning.',
+            submit: 'Create Account',
+            switch: 'Already have an account? Login'
+        }
+    };
+
+    // DOM references inside the modal.
+    const authForm = authModal.querySelector('.auth-form');
+    const fieldEmail = authModal.querySelector('[data-field="email"]');
+    const fieldPassword = authModal.querySelector('[data-field="password"]');
+    const inputEmail = fieldEmail.querySelector('input');
+    const inputPassword = fieldPassword.querySelector('input');
+    const passwordToggle = authModal.querySelector('.auth-password-toggle');
+    const forgotButton = authModal.querySelector('.auth-forgot');
+    const sendResetButton = authModal.querySelector('.auth-send-reset');
+    const fieldResetEmail = authModal.querySelector('[data-field="reset-email"]');
+    const inputResetEmail = fieldResetEmail.querySelector('input');
+    const overlays = {
+        forgot: authModal.querySelector('[data-overlay="forgot"]'),
+        resetSent: authModal.querySelector('[data-overlay="reset-sent"]'),
+        success: authModal.querySelector('[data-overlay="success"]')
+    };
+
+    // Email regex — same loose-but-good-enough pattern from the original login page.
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    let activeAuthMode = 'login';
+
+    // Updates the form's title / button labels for the active mode (login or signup).
+    //
+    // Two flavors of swap:
+    //   [data-auth-text] → plain text (safe — won't render any HTML the user typed)
+    //   [data-auth-html] → raw HTML (used by the title so we can wrap a word in <em>
+    //                       for the accent color, e.g. "Welcome <em>back</em>.")
+    //
+    // For each element, we look up its data attribute as a key into the mode's
+    // text bundle and swap the element's content.
+    function applyAuthMode(mode) {
+        activeAuthMode = mode;
+        const text = AUTH_MODE_TEXT[mode] || AUTH_MODE_TEXT.login;
+
+        // Plain-text swaps — subtitle, button labels, etc.
+        authModal.querySelectorAll('[data-auth-text]').forEach((element) => {
+            const key = element.dataset.authText;
+            if (key in text) {
+                element.textContent = text[key];
+            }
+        });
+
+        // HTML swaps — the h2 title only, so it can include the accent <em> tag.
+        authModal.querySelectorAll('[data-auth-html]').forEach((element) => {
+            const key = element.dataset.authHtml;
+            if (key in text) {
+                element.innerHTML = text[key];
+            }
+        });
+    }
+
+    // Hides every overlay and removes any error states. Used when the modal
+    // opens fresh and when "back" is clicked.
+    function hideAllOverlays() {
+        Object.values(overlays).forEach((overlay) => overlay.classList.remove('show'));
+    }
+
+    function clearFieldErrors() {
+        fieldEmail.classList.remove('error');
+        fieldPassword.classList.remove('error');
+        fieldResetEmail.classList.remove('error');
+    }
+
+    function openAuthModal(mode) {
+        applyAuthMode(mode || 'login');
+        hideAllOverlays();
+        clearFieldErrors();
+        authModal.hidden = false;
+    }
+
+    function closeAuthModal() {
+        authModal.hidden = true;
+    }
+
+    // Validates the main login/signup form. Adds .error on any invalid field.
+    function validateAuthForm() {
+        let valid = true;
+        if (!emailRegex.test(inputEmail.value.trim())) {
+            fieldEmail.classList.add('error');
+            valid = false;
+        } else {
+            fieldEmail.classList.remove('error');
+        }
+        if (inputPassword.value.length < 6) {
+            fieldPassword.classList.add('error');
+            valid = false;
+        } else {
+            fieldPassword.classList.remove('error');
+        }
+        return valid;
+    }
+
+    // Wire the nav buttons — they decide which mode the modal opens in.
+    document.querySelectorAll('[data-auth-mode]').forEach((button) => {
+        button.addEventListener('click', () => openAuthModal(button.dataset.authMode));
+    });
+
+    // Any element with data-close-auth (backdrop, × button) closes the modal.
+    authModal.querySelectorAll('[data-close-auth]').forEach((element) => {
+        element.addEventListener('click', closeAuthModal);
+    });
+
+    // Escape key closes the modal — standard accessible-dialog behavior.
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !authModal.hidden) {
+            closeAuthModal();
+        }
+    });
+
+    // Live-clear field errors as the user re-types.
+    inputEmail.addEventListener('input', () => fieldEmail.classList.remove('error'));
+    inputPassword.addEventListener('input', () => fieldPassword.classList.remove('error'));
+    inputResetEmail.addEventListener('input', () => fieldResetEmail.classList.remove('error'));
+
+    // Eye icon → toggle password visibility + swap the icon.
+    passwordToggle.addEventListener('click', () => {
+        const showing = inputPassword.type === 'text';
+        inputPassword.type = showing ? 'password' : 'text';
+        passwordToggle.innerHTML = showing ? PASSWORD_EYE : PASSWORD_EYE_OFF;
+        passwordToggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+
+    // Remember the password field's default error message so we can restore it
+    // after showing a server-side error like "Invalid email or password".
+    const passwordErrorElement = fieldPassword.querySelector('.auth-err');
+    const defaultPasswordErrorText = passwordErrorElement ? passwordErrorElement.textContent : '';
+
+    // Restoring the default validation message is what makes the per-field
+    // validation work correctly on subsequent submits after a server error.
+    inputPassword.addEventListener('input', () => {
+        if (passwordErrorElement) {
+            passwordErrorElement.textContent = defaultPasswordErrorText;
+        }
+    });
+
+    // Submit handler — calls /api/login or /api/signup depending on the active
+    // mode, then closes the modal on success (no overlay) so the user is back
+    // on the homepage. On failure, surfaces the server's error in the password
+    // field's error slot.
+    authForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!validateAuthForm()) {
+            return;
+        }
+        const submitButton = authForm.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+        const endpoint = activeAuthMode === 'signup' ? '/api/signup' : '/api/login';
+        submitButton.disabled = true;
+        submitButton.textContent = activeAuthMode === 'signup' ? 'Creating account…' : 'Signing in…';
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: inputEmail.value.trim(),
+                password: inputPassword.value
+            })
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok) {
+                if (passwordErrorElement && data.error) {
+                    passwordErrorElement.textContent = data.error;
+                }
+                fieldPassword.classList.add('error');
+                return;
+            }
+            // Success — wipe the form, update the nav buttons, close the modal.
+            authForm.reset();
+            setAuthState(data.user || { email: inputEmail.value.trim() });
+            closeAuthModal();
+        })
+        .catch(err => {
+            console.error('Auth error:', err);
+            if (passwordErrorElement) {
+                passwordErrorElement.textContent = 'Network error — please try again.';
+            }
+            fieldPassword.classList.add('error');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        });
+    });
+
+    // The bottom button toggles login ↔ signup mode in-place.
+    const switchButton = authModal.querySelector('[data-auth-switch]');
+    switchButton.addEventListener('click', () => {
+        applyAuthMode(activeAuthMode === 'login' ? 'signup' : 'login');
+    });
+
+    // Forgot Password link → show the reset overlay.
+    forgotButton.addEventListener('click', () => overlays.forgot.classList.add('show'));
+
+    // Send Reset Link button (inside the forgot overlay).
+    sendResetButton.addEventListener('click', () => {
+        if (!emailRegex.test(inputResetEmail.value.trim())) {
+            fieldResetEmail.classList.add('error');
+            return;
+        }
+        fieldResetEmail.classList.remove('error');
+        overlays.forgot.classList.remove('show');
+        overlays.resetSent.classList.add('show');
+    });
+
+    // All "← Back to login" buttons hide every overlay, returning to the form.
+    authModal.querySelectorAll('.auth-back').forEach((button) => {
+        button.addEventListener('click', hideAllOverlays);
+    });
+}
+
+initializeAuthModal();
+
+// ── Nav auth state ──
+// Toggles which buttons are visible in the nav based on whether someone is
+// logged in. When a user is present, hide Login + Sign Up and show Log out.
+// When no user, do the reverse.
+function setAuthState(user) {
+    const navLoginBtn = document.getElementById('navLoginBtn');
+    const navSignupBtn = document.getElementById('navSignupBtn');
+    const navLogoutBtn = document.getElementById('navLogoutBtn');
+
+    const loggedIn = Boolean(user);
+    if (navLoginBtn) navLoginBtn.hidden = loggedIn;
+    if (navSignupBtn) navSignupBtn.hidden = loggedIn;
+    if (navLogoutBtn) navLogoutBtn.hidden = !loggedIn;
+}
+
+// On page load, ask the server whether we already have a session — this keeps
+// the nav state correct after refreshes / new tabs.
+fetch('/api/session', { credentials: 'same-origin' })
+    .then(response => response.json())
+    .then(data => setAuthState(data.user))
+    .catch(err => console.error('Session check failed:', err));
+
+// Wire up the Log out button. Hits /api/logout, then flips the nav back to
+// the logged-out state. The server destroys the session, so the next /api/check
+// also resets the scan limit to 0.
+const navLogoutBtn = document.getElementById('navLogoutBtn');
+if (navLogoutBtn) {
+    navLogoutBtn.addEventListener('click', () => {
+        fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(() => setAuthState(null))
+            .catch(err => console.error('Logout failed:', err));
+    });
+}
