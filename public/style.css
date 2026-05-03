@@ -181,6 +181,10 @@ body[data-theme="dark"] {
     left: -40px;
 }
 
+/* ensure hidden elements are always hidden */
+.history-sidebar[hidden] {
+    display: none !important;
+}
 
 #flipSidebarBtn {
     background: var(--mode-switch-background);
