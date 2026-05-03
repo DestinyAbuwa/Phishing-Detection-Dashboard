@@ -205,9 +205,14 @@ function checkURL() {
     const resultDiv = document.getElementById('result');
     const url = userUrl.value.trim();
 
+    resultDiv.innerHTML = "";
+
+
     // Validation: Don't do anything if the input is empty
     if (!url) {
-        alert("Please paste a URL first!");
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'error');
+        resultDiv.innerHTML = "Please paste a URL first!";
         return;
     }
 
@@ -238,10 +243,24 @@ function checkURL() {
         fetch('/api/check', {
             method: 'POST', // We use POST because we are sending data
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url }) // Convert the URL into a JSON string
+            body: JSON.stringify({
+                url: url,
+                status: prediction.label,
+                risk_score: riskScore // "Phishing" or "Legitimate"
+             }) // Convert the URL into a JSON string // The number for your risk_score column
         })
         .then(response => response.json()) // Wait for the server to send back a JSON response
         .then(data => {
+            
+            // // If the server says redirect is true, send them to login
+            // if (data.redirect) {
+            //     window.location.href = "login.html"; 
+            //     return;
+            // }
+            // POSTPONED
+
+
+
             // Keep the prediction message, but log the database save
             console.log("Submission ID from Database:", data.submissionId);
             // Optionally, you could append a note: resultDiv.innerHTML += `<br><small>Saved to DB (ID: ${data.submissionId})</small>`;
@@ -259,6 +278,7 @@ function checkURL() {
         // If the Python service is unavailable, show the error style instead of the default style.
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
+        resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
@@ -277,9 +297,14 @@ function analyzeEmail() {
     const body_content = document.getElementById('email-body');
     const resultDiv = document.getElementById('result');
 
+    resultDiv.innerHTML = "";
+
+    // 2. Validation: ALL fields are now required (sender, receiver, subject, body)
     // All four fields are required before the model is called.
     if (!sender.value.trim() || !receiver.value.trim() || !subject.value.trim() || !body_content.value.trim()) {
-        alert("Please fill in all email fields: Sender, Receiver, Subject, and Body.");
+        resultDiv.style.color = '';
+        setResultState(resultDiv, 'error');
+        resultDiv.innerHTML = "Please fill in all email fields: Sender, Receiver, Subject, and Body.";
         return;
     }
 
@@ -315,7 +340,9 @@ function analyzeEmail() {
                 sender: sender.value,
                 receiver: receiver.value,
                 subject: subject.value,
-                body_content: body_content.value
+                body_content: body_content.value,
+                status: prediction.label,
+                risk_score: riskScore
             })
         })
         .then(response => response.json())
@@ -339,6 +366,7 @@ function analyzeEmail() {
         // Put the result message into the error theme class if the prediction service fails.
         console.error("Prediction error:", err);
         hideEmailConfidenceBar();
+        resultDiv.style.color = '';
         setResultState(resultDiv, 'error');
         resultDiv.innerHTML = "❌ Prediction service unavailable. Make sure Python service is running on port 5000.";
     });
