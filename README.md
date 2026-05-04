@@ -1,66 +1,116 @@
-# Phishing-Detection-Dashboard
-This dashboard uses Machine Learning to analyze URLs and Emails for phishing threats, storing scan history in a MySQL database.
+# Phishing Detection Dashboard
 
-## Project Architecture
+A full-stack application for detecting phishing URLs and emails using machine learning. The system integrates a Node.js backend, a Python Flask machine learning service, and a MySQL database to provide real-time phishing analysis.
 
-  * **Frontend:** HTML/CSS/JavaScript
-  * **Backend:** Node.js & Express (Port 3000)
-  * **ML Service:** Python & Flask (Port 5000)
-  * **Database:** MySQL
+---
 
-## Prerequisites
+## Installation and Setup
 
-  * **Node.js**: (v16 or higher)
-  * **Python**: (v3.9 or higher)
-  * **MySQL**: Local instance running
-  * **Git**: For version control
+### Prerequisites
+Ensure the following are installed:
+- Node.js (v16 or higher)
+- Python (3.9 or higher)
+- MySQL
+- Git
+- pip (Python package manager)
+
+---
 
 ## Installation Steps
 
-### 1\. Clone & Core Dependencies
+### 1. Clone the Repository
+git clone https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard.git  
+cd Phishing-Detection-Dashboard  
 
-```bash
-git clone https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard.git
-npm install
-```
+### 2. Install Node.js Dependencies
+npm install  
 
-### 2\. Machine Learning Setup
+### 3. Install Python Dependencies
+cd ML  
+python3 -m pip install flask flask-cors joblib numpy pandas scipy scikit-learn shap  
+cd ..  
 
-Navigate to the [ML folder](https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard/tree/main/ML) to install Python dependencies.
+### 4. Set Up the Database
+- Open MySQL Workbench or your MySQL terminal  
+- Run the SQL commands in `schema.sql`  
+- This will create the required database and tables  
 
-> **Note:** If `pip` is not recognized, use `py -m pip`.
+---
 
-```bash
-cd ML
-py -m pip install flask flask-cors joblib numpy scipy scikit-learn
-```
-### 3\. Database Setup
+## Codebase Structure
 
-Initialize the database by running the queries found in [schema.sql](https://github.com/DestinyAbuwa/Phishing-Detection-Dashboard/tree/main/schema.sql) in your MySQL workbench.
+Phishing-Detection-Dashboard/  
+│  
+├── public/                     # Frontend files  
+│   ├── index.html              # Single Page Application (SPA)  
+│   ├── script.js               # Client-side JavaScript  
+│   ├── style.css               # Styling and themes  
+│   ├── loading-bar.js          # Loading bar library  
+│   ├── loading-bar.css         # Loading bar styles  
+│   └── images/                 # Image assets  
+│  
+├── ML/                         # Python / Flask ML service  
+│   ├── predict.py              # Flask server and prediction logic  
+│   ├── *.pkl                   # Serialized models (no retraining required)  
+│   ├── WHITELIST-urls.txt      # Trusted domains  
+│   ├── BLACKLIST-urls.txt      # Untrusted domains  
+│   │  
+│   ├── Preprocessing/          # Data preparation scripts  
+│   │   ├── url-preprocessing.py  
+│   │   └── email-preprocessing.py  
+│   │  
+│   └── Testing/                # Model testing scripts  
+│       ├── save-url-model.py  
+│       ├── save-email-model.py  
+│       ├── url-model-comparison.py  
+│       └── EmailModelComparison.py  
+│  
+├── index.js                    # Main Node.js server  
+├── database.js                 # Database connection setup  
+├── schema.sql                  # Database schema  
+├── package.json                # Node dependencies  
+├── .env.example                # Environment configuration template  
+└── README.md                   # Project documentation  
 
-## How to Run Locally
+---
 
-To run the full application, you must have **two terminals** open simultaneously.
+## Usage Instructions
 
-### Terminal 1: Node.js Server
+### 1. Start the Node.js Backend
+node index.js  
 
-```bash
-node index.js
-```
+### 2. Start the Python ML Service (in a separate terminal)
+python ML/predict.py  
 
-*Runs on [http://localhost:3000](http://localhost:3000)*
+### 3. Open the Application
+http://localhost:3000  
 
-### Terminal 2: Python ML Service
+- Node.js server runs on port 3000  
+- Flask ML service runs on port 5000  
 
-```bash
-cd ML
-py predict.py
-```
+---
 
-## Planned Features (Iteration 3)
-* ### Implement Login Page
-* ### Store Logins in Database
-* ### Risk Score
-* ### Error Messages
-* ### Connect ML Results to Backend
-* ### Dark Mode-Light Mode Toggle
+## Contributing
+
+To contribute to the project:
+
+1. Fork the repository  
+2. Create a new branch:  
+   git checkout -b feature/<description-of-feature>  
+
+3. Make your changes  
+
+4. Commit your changes:  
+   git commit -m "Insert relevant update description here"  
+
+5. Push to your branch:  
+   git push origin feature/<description-of-feature>  
+
+6. Open a pull request for review  
+
+---
+
+## Notes
+
+- .pkl files are serialized machine learning models, allowing predictions without retraining  
+- Both the Node.js backend and Flask ML service must be running for full functionality  
