@@ -28,7 +28,6 @@ npm install
 ### 3. Install Python Dependencies
 cd ML  
 python3 -m pip install flask flask-cors joblib numpy pandas scipy scikit-learn shap  
-cd ..  
 
 ### 4. Set Up the Database
 - Open MySQL Workbench or your MySQL terminal  
