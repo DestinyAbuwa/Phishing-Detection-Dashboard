@@ -1,371 +1,607 @@
-/* root defines light mode to be the default color */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Light theme tokens.
-   These are the default colors the whole page uses unless dark mode overrides them below. */
 :root {
-    /* Page background behind the hero image and cards. */
-    --page-background: #f6f8fb;
-    /* Main card background for the URL and Email panels. */
-    --card-background: rgba(255, 255, 255, 0.84);
-    /* Stronger nav background so the fixed header stays readable over the banner. */
-    --navbar-background: rgba(255, 255, 255, 0.92);
-    /* Soft panel used behind the URL/Email mode switch pills. */
-    --mode-switch-background: rgba(255, 255, 255, 0.75);
-    /* Main heading and body text color. */
-    --main-text-color: #10243e;
-    /* Secondary text color for tabs, helper text, and default results. */
-    --secondary-text-color: #14345d;
-    /* Text color that sits on top of the primary blue button. */
-    --button-text-color: #ffffff;
-    /* Link color in the top nav. */
-    --link-color: #10243e;
-    /* Input borders and subtle UI outlines. */
-    --input-border-color: #c7d3df;
-    /* Divider line above the risk card. */
-    --section-divider-color: rgba(199, 211, 223, 0.85);
-    /* Main accent color used for buttons and the active checker tab. */
-    --button-background: #1358f5;
-    /* Hover state for the main accent button. */
-    --button-hover-background: #0f46c2;
-    /* Fixed nav shadow so it separates from the banner. */
-    --navbar-shadow: 0 1px 0 rgba(10, 24, 42, 0.08);
-    /* Card shadow for the main checker panels. */
-    --card-shadow: 0 12px 30px rgba(10, 24, 42, 0.16);
-    /* Shadow for the pill switch above the panels. */
-    --mode-switch-shadow: 0 8px 20px rgba(42, 10, 10, 0.14);
-    /* Input and textarea fill color. */
-    --input-background: rgba(255, 255, 255, 0.96);
-    /* Error color used when a service call fails. */
-    --error-text-color: #b42318;
-    /* Banner overlay tint that slightly darkens the hero image. */
-    --banner-overlay-color: rgba(8, 16, 28, 0.08);
+    --nav-height: 64px;
+    --radius-card: 16px;
+    --radius-input: 10px;
+    --radius-btn: 10px;
+    --radius-pill: 999px;
+    --transition: 0.22s ease;
+
+    /* Light theme */
+    --page-background: #f1f5fc;
+    --card-background: #ffffff;
+    --card-border-color: rgba(0, 0, 0, 0.07);
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 16px 40px rgba(15, 30, 80, 0.1);
+    --navbar-background: rgba(255, 255, 255, 0.95);
+    --navbar-border-color: rgba(0, 0, 0, 0.08);
+    --main-text-color: #0d1a35;
+    --secondary-text-color: #5a6a85;
+    --accent: oklch(0.44 0.18 252);
+    --button-hover-background: oklch(0.38 0.18 252);
+    --accent-rgb: 26, 90, 210;
+    --input-background: #f8faff;
+    --input-border-color: #d4dcea;
+    --input-focus-border-color: oklch(0.44 0.18 252);
+    --mode-switch-background: rgba(0, 0, 0, 0.05);
+    --mode-switch-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --error-text-color: #c0392b;
+    --section-divider-color: #e2e8f0;
+    --placeholder-text-color: #9aaabb;
 }
 
-/* Dark theme overrides.
-   When JS sets body[data-theme="dark"], every component that uses the variables above
-   automatically swaps to these darker values. */
 body[data-theme="dark"] {
-    /* Dark page background. */
-    --page-background: #0b1220;
-    /* Dark card background so the panels stand out from the page. */
-    --card-background: rgba(18, 27, 40, 0.9);
-    /* Dark fixed-header background. */
-    --navbar-background: rgba(11, 18, 32, 0.94);
-    /* Dark pill background for the mode switcher. */
-    --mode-switch-background: rgba(18, 27, 40, 0.82);
-    /* Main text becomes light for contrast on dark surfaces. */
-    --main-text-color: #edf4ff;
-    /* Secondary text becomes a softer blue-gray. */
-    --secondary-text-color: #bfd0e8;
-    /* Button text stays bright enough over the new blue accent. */
-    --button-text-color: #f8fbff;
-    /* Nav links also shift to a light color. */
-    --link-color: #edf4ff;
-    /* Borders become darker blue-gray instead of pale gray. */
-    --input-border-color: #3a4b61;
-    /* Divider line for the risk card in dark mode. */
-    --section-divider-color: rgba(58, 75, 97, 0.95);
-    /* Slightly lighter accent blue that reads better on dark backgrounds. */
-    --button-background: #5f8fff;
-    /* Hover state for the dark-mode accent button. */
-    --button-hover-background: #7ca4ff;
-    /* Softer nav shadow suited for a dark UI. */
-    --navbar-shadow: 0 1px 0 rgba(148, 163, 184, 0.12);
-    /* Deeper panel shadow so cards still feel elevated in dark mode. */
-    --card-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
-    /* Stronger shadow under the mode switch pill. */
-    --mode-switch-shadow: 0 12px 28px rgba(2, 6, 23, 0.35);
-    /* Darker input fill so fields blend with the theme but stay distinct. */
-    --input-background: rgba(11, 18, 32, 0.88);
-    /* Lighter red for errors so it remains readable on dark backgrounds. */
-    --error-text-color: #ff8a80;
-    /* Stronger dark overlay so the hero image does not feel too bright in dark mode. */
-    --banner-overlay-color: rgba(3, 8, 18, 0.5);
+    --page-background: #0d1120;
+    --card-background: rgba(18, 26, 48, 0.95);
+    --card-border-color: rgba(255, 255, 255, 0.07);
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 16px 40px rgba(0, 0, 0, 0.5);
+    --navbar-background: rgba(10, 15, 30, 0.95);
+    --navbar-border-color: rgba(255, 255, 255, 0.07);
+    --main-text-color: #d6e4ff;
+    --secondary-text-color: #5a7aaa;
+    --accent: oklch(0.55 0.18 252);
+    --button-hover-background: oklch(0.5 0.18 252);
+    --input-background: rgba(5, 10, 25, 0.7);
+    --input-border-color: rgba(60, 100, 180, 0.25);
+    --input-focus-border-color: oklch(0.55 0.18 252);
+    --mode-switch-background: rgba(15, 25, 50, 0.9);
+    --mode-switch-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --section-divider-color: rgba(60, 100, 180, 0.2);
+    --placeholder-text-color: rgba(90, 122, 170, 0.6);
 }
 
-/* Global page styles.
-   The important change here is that the page now reads from CSS variables,
-   which is what makes the theme switch work everywhere at once. */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: "Inter", sans-serif;
+    font-family: "DM Sans", "Inter", sans-serif;
+    min-height: 100vh;
     background-color: var(--page-background);
     color: var(--main-text-color);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color var(--transition), color var(--transition);
 }
 
-/* Fixed top navigation bar.
-   It uses the stronger surface color so it stays readable over the image banner. */
+a { text-decoration: none; color: inherit; }
+
+/* ── Nav ── */
 .menu-area {
-    font-family: "Inter", sans-serif;
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+    top: 0; left: 0; right: 0;
+    height: var(--nav-height);
     display: flex;
-    justify-content: center;
     align-items: center;
-    flex-direction: row;
-    flex-wrap: wrap;
+    padding: 0 5%;
     background-color: var(--navbar-background);
-    box-shadow: var(--navbar-shadow);
-    backdrop-filter: blur(14px);
-    z-index: 10;
+    border-bottom: 1px solid var(--navbar-border-color);
+    z-index: 100;
+    transition: background-color var(--transition);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
-/* The nav list that holds the "Home" link. */
+.logo {
+    flex: 1;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    cursor: pointer;
+    color: var(--main-text-color);
+    transition: opacity 0.2s;
+    margin: 0;
+}
+
+.logo span { color: var(--accent); }
+.logo:hover { opacity: 0.8; }
+
 .nav {
     display: flex;
-    font-family: "Inter", sans-serif;
-    justify-content: right;
     list-style: none;
-    margin-right: 4%;
-    font-weight: bold;
+    gap: 4px;
     padding: 0;
+    margin: 0;
+    font-weight: normal;
+    font-size: inherit;
 }
 
-/* Brand/logo text on the left side of the header. */
-.logo {
-    flex: 1 1 auto;
-    margin-left: 10%;
-    letter-spacing: 1px;
-    font-weight: bold;
-    font-size: 25px;
-}
-
-/* Shared anchor styling for the logo and nav link. */
-a {
-    margin: 15px;
-    color: var(--link-color);
-    text-decoration: none;
-}
-
-/* New theme toggle button.
-   This sits in the header and changes appearance automatically with the theme variables. */
+/* ── Shared nav button style ──
+   Home, Login, and Dark mode all use this bordered-pill look so the nav reads
+   as one consistent set of controls. Sign Up overrides this with a filled
+   accent fill (see .nav-auth-btn-primary below) since it's the primary CTA. */
+.nav a,
+.nav-auth-btn,
 .theme-toggle {
-    margin-right: 10%;
-    border: 1px solid var(--input-border-color);
-    border-radius: 999px;
-    padding: 10px 16px;
-    background: var(--card-background);
-    color: var(--main-text-color);
-    font: inherit;
-    font-weight: 600;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition: all var(--transition);
+    background: transparent;
+    color: var(--secondary-text-color);
+    border: 1px solid var(--input-border-color);
 }
 
-/* Small hover lift to make the toggle feel clickable. */
+/* Shared hover — accent-tinted border + bumped-up text color for all three. */
+.nav a:hover,
+.nav-auth-btn:hover,
 .theme-toggle:hover {
-    transform: translateY(-1px);
+    color: var(--main-text-color);
+    border-color: var(--accent);
 }
 
-/* Hero image section at the top of the page. */
+/* Theme toggle is icon-only — square padding so the moon/sun SVG sits centered
+   in a circle (the shared pill border-radius rounds the square corners off).
+   margin-left keeps it separated from the auth cluster. */
+.theme-toggle {
+    margin-left: 16px;
+    padding: 8px;                   /* square instead of the wide 8px 16px pill */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;                 /* prevents the SVG from inflating the button height */
+}
+
+/* ── Hero banner — fixed behind the sliding content layer ── */
 .hero-banner {
-    position: relative;
-    margin-top: 68px;
-    width: 100%;
-    height: 360px;
-    background-image: url("./images/fish.jpg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center center;
+    position: fixed;
+    top: var(--nav-height);
+    left: 12px;
+    right: 12px;
+    height: calc(100vh - var(--nav-height));
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(15, 30, 80, 0.14);
+    z-index: 0;
 }
 
-/* Overlay on top of the hero image.
-   This is especially useful in dark mode because it tones down the bright photo. */
+/* ── Content layer — slides up over the fixed hero on scroll ── */
+.page-content {
+    position: relative;
+    z-index: 2;
+    background: var(--page-background);
+    margin-top: 100vh;
+    min-height: 100vh;
+    padding-bottom: 8vh;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.12);
+    transition: background-color var(--transition);
+    overflow: hidden;
+}
+
+/* Fish image — oversized so it can parallax up without showing edges */
+.hero-img {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 160%;
+    background-image: url("./images/fish.jpg");
+    background-size: cover;
+    background-position: center top;
+    will-change: transform;
+    transform-origin: center top;
+}
+
 .hero-banner::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(7, 14, 28, 0.02) 0%, var(--banner-overlay-color) 100%);
+    background: linear-gradient(180deg,
+        rgba(241, 245, 252, 0.04) 0%,
+        rgba(241, 245, 252, 0.12) 60%,
+        rgba(241, 245, 252, 0.62) 100%);
+    transition: background var(--transition);
+    z-index: 1;
 }
 
-/* Main layout wrapper for the checker UI. */
-#home {
-    position: relative;
-    font-family: "Inter", sans-serif;
-    margin-top: -120px;
-    padding: 0 0 72px;
-    width: 100%;
-    min-height: calc(100vh - 428px);
+body[data-theme="dark"] .hero-banner::after {
+    background: linear-gradient(180deg,
+        rgba(8, 12, 28, 0.18) 0%,
+        rgba(8, 12, 28, 0.42) 60%,
+        rgba(13, 17, 32, 0.92) 100%);
+}
+
+/* ── Scroll cue — animated hint sitting at the bottom of the hero ── */
+.scroll-cue {
+    position: absolute;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 48px;
-    background: transparent;
+    gap: 20px;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    will-change: opacity;
+    /* Theme-aware color — dark in light mode, light in dark mode */
+    color: var(--main-text-color);
+}
+
+.scroll-cue-label {
+    font-family: "DM Sans", "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: inherit;
+    padding-left: 0.32em; /* optical balance for letter-spacing */
+    /* Dual shadow — crisp edge on a light overlay */
+    text-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.45),
+        0 0 24px rgba(255, 255, 255, 0.25);
+}
+
+body[data-theme="dark"] .scroll-cue-label {
+    text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.6),
+        0 0 24px rgba(0, 0, 0, 0.4);
+}
+
+.scroll-cue-line {
+    position: relative;
+    width: 2px;
+    height: 72px;
+    background-color: color-mix(in srgb, currentColor 32%, transparent);
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+/* Accent-blue comet — pops on both light and dark backgrounds */
+.scroll-cue-line::after {
+    content: "";
+    position: absolute;
+    top: -36px;
+    left: 0;
+    width: 100%;
+    height: 36px;
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        var(--accent) 100%);
+    animation: scroll-comet 2.2s cubic-bezier(0.55, 0.05, 0.35, 1) infinite;
+}
+
+@keyframes scroll-comet {
+    0%   { transform: translateY(0);     opacity: 0; }
+    10%  { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { transform: translateY(108px); opacity: 0; }
+}
+
+/* Small chevron below the line — extra affordance, gently pulses */
+.scroll-cue-chevron {
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    margin-top: -8px;
+    opacity: 0.5;
+    animation: scroll-chevron 2.2s ease-in-out infinite;
+}
+
+@keyframes scroll-chevron {
+    0%, 100% { opacity: 0.35; transform: rotate(45deg) translate(-2px, -2px); }
+    50%      { opacity: 0.8;  transform: rotate(45deg) translate(1px, 1px); }
+}
+
+/* ── Headline block ── */
+.clarity-headline {
     text-align: center;
+    padding: 40px 24px 0;
+}
+
+.clarity-headline h2 {
+    font-size: clamp(22px, 3vw, 36px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--main-text-color);
+    line-height: 1.15;
+    margin-bottom: 8px;
+}
+
+.clarity-headline h2 span { color: var(--accent); }
+
+.clarity-headline p {
+    font-size: 15px;
+    color: var(--secondary-text-color);
+    font-weight: 400;
+}
+
+/* ── Checker section ── */
+#home {
+    position: relative;
+    padding: 32px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
     z-index: 2;
 }
 
-/* URL/Email mode pill container.
-   The only real theme change here is the background and shadow now come from variables. */
+/* Mode switch */
 .mode-switch {
     display: inline-flex;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 999px;
+    gap: 6px;
+    padding: 6px;
+    border-radius: var(--radius-pill);
     background-color: var(--mode-switch-background);
     box-shadow: var(--mode-switch-shadow);
-    position: relative;
-    top: -200px;
+    margin-bottom: 20px;
 }
 
-/* Individual pill buttons for URL Checker and Email Checker. */
 .mode-btn {
-    border: 0;
-    border-radius: 999px;
-    padding: 10px 18px;
-    font-size: 14px;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 9px 20px;
+    font-family: inherit;
+    font-size: 13px;
     font-weight: 600;
     background: transparent;
     color: var(--secondary-text-color);
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: all var(--transition);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
 }
 
-/* Active pill styling.
-   This uses the shared primary color so it updates in light and dark mode automatically. */
+.mode-btn:hover { color: var(--main-text-color); }
+
 .mode-btn.is-active {
-    background-color: var(--button-background);
-    color: var(--button-text-color);
+    background-color: var(--accent);
+    color: #fff;
 }
 
-/* Wrapper around the result message, panels, and risk card. */
+/* Checker panels wrapper */
 .checker-panels {
     width: 100%;
-    padding-top: 8px;
-}
-
-/* Shared result message box.
-   Moved out of inline HTML styles so we can manage its color with theme-aware classes. */
-.result-message {
-    min-height: 30px;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    font-weight: bold;
-    font-size: 1.3rem;
-    text-align: center;
-}
-
-/* Default result state for neutral messages. */
-.result-default {
-    color: var(--secondary-text-color);
-}
-
-/* Error result state used when the backend/prediction service fails. */
-.result-error {
-    color: var(--error-text-color);
-}
-
-/* All panels are hidden by default until JS marks the active one. */
-.checker-panels .panel {
-    display: none;
-}
-
-/* Shared card styles for both checker panels.
-   The big theme-related change is that background, text, and shadow all use variables now. */
-.Url,
-.email-content {
+    max-width: 740px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    align-items: stretch;
-    width: min(680px, 92%);
+    align-items: center;
+}
+
+.result-message {
+    min-height: 20px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+}
+
+.result-default { color: var(--secondary-text-color); }
+.result-error { color: var(--error-text-color); }
+
+.panel { display: none !important; width: 100%; }
+.panel.active { display: flex !important; }
+
+/* Cards */
+.Url, .email-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 680px;
     margin: 0 auto;
-    padding: 28px;
-    border-radius: 14px;
+    padding: 32px;
+    border-radius: var(--radius-card);
     background-color: var(--card-background);
+    border: 1px solid var(--card-border-color);
     box-shadow: var(--card-shadow);
     color: var(--main-text-color);
-    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color var(--transition), box-shadow var(--transition);
+    overflow: hidden;
 }
 
-/* Panel headings now read from the theme text color. */
-.Url h1,
-.email-content h1 {
-    font-size: 34px;
-    margin: 0 0 8px;
+.Url h1, .email-content h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     color: var(--main-text-color);
-    text-align: left;
+    margin-bottom: 4px;
 }
 
-/* Shared input field styling.
-   Inputs now switch their border, fill, and text color with the theme. */
+/* Scan loader — thin animated bar at top of card */
+.scan-loader {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--input-border-color);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+
+.scan-loader.is-loading { opacity: 1; }
+
+.scan-loader::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 45%; height: 100%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.scan-loader.is-loading::after {
+    animation: scan-sweep 1.3s ease-in-out infinite;
+}
+
+@keyframes scan-sweep {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
+}
+
+/* Inputs */
 .Url input,
 .email-content input,
 .email-content textarea {
-    font-family: "Poppins", sans-serif;
+    font-family: inherit;
     width: 100%;
     border: 1px solid var(--input-border-color);
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 16px;
-    box-sizing: border-box;
+    border-radius: var(--radius-input);
+    padding: 13px 16px;
+    font-size: 15px;
     background-color: var(--input-background);
     color: var(--main-text-color);
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-/* Placeholder color also changes with the active theme. */
+.Url input:focus,
+.email-content input:focus,
+.email-content textarea:focus {
+    border-color: var(--input-focus-border-color);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
 .Url input::placeholder,
 .email-content input::placeholder,
 .email-content textarea::placeholder {
-    color: var(--secondary-text-color);
-    opacity: 0.8;
+    color: var(--placeholder-text-color);
 }
 
-/* Email body box sizing only. */
 .email-content textarea {
-    min-height: 160px;
+    min-height: 140px;
     resize: vertical;
 }
 
-/* Shared CTA buttons for scan/analyze actions. */
-.Url button,
-.email-content button {
-    align-self: flex-end;
-    border: 0;
-    border-radius: 10px;
-    padding: 12px 18px;
-    background-color: var(--button-background);
-    color: var(--button-text-color);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
+/* Panel action row (Report + Scan button + toggle) */
+.panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
 }
 
-/* Button hover color comes from the theme accent hover token. */
+/* Report Result button — inherits the accent-blue styling from .Url button /
+   .email-content button. The only extra rule it needs is to sit on the LEFT
+   while Scan/Analyze sit on the right.
+
+   How `margin-right: auto` pushes it left:
+   The parent .panel-actions is a flex row with `justify-content: flex-end`,
+   which normally packs all children at the right edge. When one flex item has
+   `margin-right: auto`, that margin absorbs ALL the leftover free space in the
+   row, effectively shoving that item to the far left while the others stay
+   right-aligned. No wrapper div, no extra markup — one line. */
+.report-btn { margin-right: auto; }
+
+/* Success state applied after the user submits a report.
+   We override the blue accent with a soft green outline so the user sees
+   visual confirmation without another toast/banner. `pointer-events: none`
+   prevents double-submits by making the button non-clickable. */
+.report-btn.is-reported {
+    background-color: transparent !important;
+    color: #1f8f4e !important;
+    border: 1px solid #bfe7cf;
+    cursor: default;
+    pointer-events: none;
+}
+
+.Url button,
+.email-content button {
+    font-family: inherit;
+    border: none;
+    border-radius: var(--radius-btn);
+    padding: 12px 22px;
+    background-color: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition), transform 0.15s, opacity var(--transition);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
 .Url button:hover,
 .email-content button:hover {
     background-color: var(--button-hover-background);
+    transform: translateY(-1px);
 }
 
-/* JS adds .active to the selected checker panel. */
-.checker-panels .panel.active {
-    display: flex;
+.Url button:active,
+.email-content button:active {
+    transform: translateY(0);
+    opacity: 0.85;
 }
 
-/* Risk meter container under the active panel. */
+/* Last-submission toggle (small chevron beside scan button) */
+.last-submission-toggle {
+    min-width: 40px;
+    border: 1px solid var(--input-border-color);
+    border-radius: var(--radius-input);
+    padding: 10px 14px;
+    background-color: var(--input-background);
+    color: var(--secondary-text-color);
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color var(--transition);
+    font-family: inherit;
+}
+
+.last-submission-toggle[aria-expanded="true"] { transform: rotate(180deg); }
+
+/* Last-submission expandable panel */
+.last-submission-details {
+    padding-top: 12px;
+    border-top: 1px solid var(--section-divider-color);
+    margin-top: 4px;
+}
+
+.last-submission-title {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--secondary-text-color);
+    text-align: left;
+}
+
+.last-submission-content {
+    display: grid;
+    gap: 10px;
+    text-align: left;
+    color: var(--main-text-color);
+}
+
+.last-submission-item { display: grid; gap: 3px; }
+
+.last-submission-item-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+}
+
+.last-submission-item-value {
+    margin: 0;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+.last-submission-item-value.is-multiline { white-space: pre-wrap; }
+
+/* Risk card */
 .risk-card {
     width: 100%;
-    margin: 8px 0 0;
-    padding: 14px 0 4px;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 0 8px;
     border-top: 1px solid var(--section-divider-color);
-    border-radius: 0;
     background: transparent;
-    box-shadow: none;
-    box-sizing: border-box;
 }
 
-/* Risk label text under the wave bar. */
 .risk-level-text {
     margin: 8px 0 0;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     color: var(--secondary-text-color);
     text-align: center;
-    letter-spacing: 0.2px;
+    letter-spacing: -0.01em;
 }
 
 /* SHAP feature summary inside the shared risk card. */
@@ -410,39 +646,686 @@ a {
     color: var(--secondary-text-color);
 }
 
-/* Heading that shows the tested URL in URL mode only. */
-.tested-url-heading {
-    margin: 0 0 8px;
-    font-size: 17px;
+/* loading-bar label */
+#emailConfidenceBar .ldBar-label {
+    font-size: 28px;
     font-weight: 700;
+    color: var(--secondary-text-color);
+}
+
+/* Dark-mode brighten — the risk-card labels use --secondary-text-color, which
+   is muted by design but gets too dim on the dark page background. JS overrides
+   the colors after a scan, but these handle the default + pre-scan state and
+   the "Top decision features" heading which is purely CSS-driven. */
+body[data-theme="dark"] #emailConfidenceBar .ldBar-label,
+body[data-theme="dark"] .risk-level-text,
+body[data-theme="dark"] .shap-feature-summary p {
     color: var(--main-text-color);
+}
+
+/* Replace the third-party white glow with a dark halo that separates the number from the wave. */
+body[data-theme="dark"] .ldBar.label-center > .ldBar-label {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.95), 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* SHAP feature summary inside the shared risk card. */
+.shap-feature-summary {
+    width: min(560px, 88%);
+    margin: 12px auto 0;
+    color: var(--main-text-color);
+    text-align: left;
+}
+
+.shap-feature-summary:empty {
+    display: none;
+}
+
+.shap-feature-summary p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 800;
     text-align: center;
 }
 
-/* Small-screen layout adjustments so the nav and cards still fit comfortably on mobile. */
+/* Fullscreen overlay centered on the page. Hidden by default via the HTML
+   `hidden` attribute; JS toggles it open/closed. Uses a flex container so
+   the dialog centers both horizontally and vertically at any viewport size. */
+.report-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+/* Respect the HTML `hidden` attribute even though we're using display:flex.
+   Without this override, [hidden] is beaten by the .report-modal display rule. */
+.report-modal[hidden] { display: none; }
+
+.report-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 28, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.report-modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    padding: 28px 28px 22px;
+    border-radius: var(--radius-card);
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border-color);
+    box-shadow: var(--card-shadow);
+    color: var(--main-text-color);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: report-modal-in 0.18s ease-out;
+}
+
+@keyframes report-modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.report-modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+.report-modal-subtitle {
+    margin: -6px 0 4px;
+    font-size: 13px;
+    color: var(--secondary-text-color);
+}
+
+.report-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.report-modal-cancel,
+.report-modal-submit {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+    transition: background-color var(--transition), transform 0.15s, border-color var(--transition);
+    border: 1px solid transparent;
+}
+
+.report-modal-cancel {
+    background-color: transparent;
+    border-color: var(--input-border-color);
+    color: var(--secondary-text-color);
+}
+
+.report-modal-cancel:hover {
+    color: var(--main-text-color);
+    border-color: var(--accent);
+}
+
+/* Primary "Submit Report" — solid accent fill matching the scan buttons. */
+.report-modal-submit {
+    background-color: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.report-modal-submit:hover {
+    background-color: var(--button-hover-background);
+    transform: translateY(-1px);
+}
+
+/* Inline confirmation replacing the Report button after submit */
+.report-confirmation {
+    margin-right: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f8f4e;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Nav auth cluster ──
+   Wrapper that holds the Login + Sign Up buttons, kept apart from the page
+   nav links and the theme toggle by margin-left. The buttons themselves
+   inherit their base look from the shared .nav-auth-btn rule above. */
+.nav-auth {
+    display: flex;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+/* Sign Up overrides the shared bordered look with a solid accent fill —
+   it's the primary call-to-action, so it should visually stand out. */
+.nav-auth-btn-primary {
+    background-color: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.nav-auth-btn-primary:hover {
+    background-color: var(--button-hover-background);
+    border-color: var(--button-hover-background);
+    color: #fff;       /* keep text white on hover instead of inheriting the shared dark color */
+}
+
+/* ── Auth modal ──
+   Full-page overlay holding the login/signup popup. Scaled-down version of
+   the original two-column auth design (art panel left, form panel right).
+   All rules scoped under .auth-modal to avoid colliding with the rest of the app.
+
+   Local design tokens — only used inside the auth modal so it can preserve
+   its own distinctive look without affecting the NoPhish color system. */
+.auth-modal {
+    --auth-card: #ffffff;
+    --auth-ink: #0b0d1a;
+    --auth-ink-soft: #4b4f66;
+    --auth-accent: #54acd2;
+    --auth-accent-deep: #1e6b8c;
+    --auth-danger: #c2413a;
+    --auth-ring: rgba(84, 172, 210, 0.35);
+    /* Use the same fonts as the rest of the app so the modal feels native. */
+    --auth-display: "DM Sans", "Inter", sans-serif;
+    --auth-slab: "DM Sans", "Inter", sans-serif;
+
+    position: fixed;
+    inset: 0;
+    z-index: 250;                  /* above the report modal (z-index: 200) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    font-family: var(--auth-slab);
+    color: var(--auth-ink);
+}
+
+/* Honor the `hidden` attribute even though display is flex. */
+.auth-modal[hidden] { display: none; }
+
+/* Dimmed/blurred backdrop — clicking dismisses the modal. */
+.auth-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 28, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* Two-column card. The art panel and form panel slightly overlap to create
+   the layered look from the original design — that's the negative margins. */
+.auth-card {
+    position: relative;
+    width: min(880px, 100%);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 480px;
+    animation: auth-card-in 0.22s ease-out;
+}
+
+@keyframes auth-card-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Left panel — gradient background with hero text and the fish image.
+   Negative right margin lets the form panel overlap it slightly. */
+.auth-modal .auth-art {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    margin-right: -24px;
+    background: linear-gradient(180deg, #0a2540 0%, #155b8a 40%, #54acd2 100%);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+    z-index: 1;
+}
+
+/* Big "No Phish" headline on the left art panel.
+   Heavy weight (800) + tight letter-spacing matches the home-page headline
+   style — DM Sans needs to be bold to feel like a display font. */
+.auth-modal .auth-art h1 {
+    position: relative;
+    font-family: var(--auth-display);
+    font-size: 48px;
+    font-weight: 800;          /* DM Sans needs to be heavy to read as a headline */
+    line-height: 0.95;
+    margin: 0;
+    padding: 48px 36px 0;
+    color: #fff;
+    letter-spacing: -0.03em;   /* tighter spacing makes big sans-serif text feel more polished */
+}
+
+/* Small yellow caption above "No Phish" — like a tagline.
+   Uppercase + wide letter-spacing gives it a "small caps" badge feel. */
+.auth-modal .auth-art h1 span {
+    display: block;
+    color: #ffd75a;
+    font-family: var(--auth-slab);
+    font-weight: 600;          /* slightly bold so it reads clearly at small size */
+    font-size: 13px;           /* small — it's an eyebrow, not a headline */
+    letter-spacing: 0.12em;    /* wide spacing = small-caps look */
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.auth-modal .auth-tag {
+    position: relative;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--auth-slab);
+    font-weight: 300;
+    padding: 12px 36px 0;
+    font-size: 15px;
+    max-width: 320px;
+}
+
+.auth-modal .auth-scene {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.auth-modal .auth-scene img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Right panel — white form card. Negative left margin to overlap the art. */
+.auth-modal .auth-form-side {
+    position: relative;
+    background: var(--auth-card);
+    border-radius: 28px;
+    padding: 44px 40px 40px 56px;
+    margin: 24px 0 24px -24px;
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    z-index: 2;
+}
+
+/* Close (×) button in the top-right corner of the form panel. */
+.auth-modal .auth-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 0;
+    background: transparent;
+    color: var(--auth-ink-soft);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.auth-modal .auth-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--auth-ink);
+}
+
+/* The greeting at the top of the form — "Welcome back." or "Hi There,".
+   Same weight/spacing recipe as the home-page h2 so the modal feels native. */
+.auth-modal .auth-form-side h2 {
+    font-family: var(--auth-display);
+    font-size: 36px;
+    font-weight: 800;          /* matches the home-page headline weight */
+    line-height: 1.05;         /* slight breathing room — taller than the art h1 since this one is shorter */
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+}
+
+.auth-modal .auth-form-side h2 em {
+    font-style: normal;
+    color: var(--auth-accent);
+}
+
+.auth-modal .auth-subtitle {
+    margin: 0 0 8px;
+    color: var(--auth-ink-soft);
+    font-weight: 300;
+    font-size: 15px;
+}
+
+/* Floating-label fields. The label is absolutely positioned over the input
+   and shrinks/lifts when the input is focused or filled (see :focus + label). */
+.auth-modal .auth-field { position: relative; }
+
+/* Floating label that sits inside the input until the user types.
+   Muted color + medium weight so it reads like a placeholder, not a heading. */
+.auth-modal .auth-field label {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--auth-display);
+    font-size: 14px;
+    font-weight: 500;          /* medium — lighter than headings, heavier than body */
+    color: var(--auth-ink-soft);  /* grey so it looks like placeholder text */
+    pointer-events: none;      /* clicks pass through to the input below */
+    transition: all 0.18s ease;
+    background: transparent;
+    padding: 0 6px;
+}
+
+.auth-modal .auth-field input {
+    width: 100%;
+    font: inherit;
+    font-family: var(--auth-slab);
+    font-weight: 600;
+    font-size: 16px;
+    padding: 14px 22px;
+    border: 1.5px solid var(--auth-ink);
+    border-radius: 999px;
+    background: var(--auth-card);
+    color: var(--auth-ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-modal .auth-field input:focus {
+    border-color: var(--auth-accent-deep);
+    box-shadow: 0 0 0 4px var(--auth-ring);
+}
+
+/* The trick: when the input is focused OR has user-entered text, lift the label
+   to the top edge and shrink it. `:not(:placeholder-shown)` works because the
+   placeholder is a single space, so it's only "shown" when the field is empty. */
+.auth-modal .auth-field input:focus + label,
+.auth-modal .auth-field input:not(:placeholder-shown) + label {
+    top: 0;
+    transform: translateY(-50%) scale(0.8);
+    background: var(--auth-card);
+    color: var(--auth-accent-deep);
+}
+
+.auth-modal .auth-field.error input { border-color: var(--auth-danger); }
+
+.auth-modal .auth-field.error input:focus {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--auth-danger), transparent 75%);
+}
+
+.auth-modal .auth-err {
+    position: absolute;
+    left: 22px;
+    bottom: -18px;
+    font-size: 12px;
+    color: var(--auth-danger);
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.auth-modal .auth-field.error .auth-err {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Eye icon inside the password field — toggles visibility of the password text. */
+.auth-modal .auth-password-toggle {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    appearance: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--auth-ink-soft);
+}
+
+.auth-modal .auth-password-toggle:hover { color: var(--auth-ink); }
+
+.auth-modal .auth-password-toggle svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.auth-modal .auth-row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+/* Forgot-password link styled as text-only with an underline on hover. */
+/* "Forgot Password?" link under the password field.
+   Small + grey so it sits quietly — it's a secondary action, not a CTA. */
+.auth-modal .auth-forgot {
+    font-family: var(--auth-display);
+    font-size: 13px;           /* small — secondary action */
+    font-weight: 500;
+    color: var(--auth-ink-soft);  /* grey — recedes visually */
+    text-decoration: none;
+    border: 0;
+    border-bottom: 1px solid transparent;  /* invisible underline that fills in on hover */
+    cursor: pointer;
+    background: transparent;
+    padding: 2px 0;
+}
+
+.auth-modal .auth-forgot:hover { border-bottom-color: var(--auth-accent); }
+
+/* Primary submit button — dark pill that flips to accent on hover. */
+/* Big primary button (Login / Create Account / Send Reset Link).
+   Full-width pill, dark by default, flips to accent blue on hover. */
+.auth-modal .auth-btn {
+    appearance: none;          /* strip browser default button styling */
+    cursor: pointer;
+    width: 100%;               /* full-width to anchor the form */
+    padding: 14px 26px;
+    border-radius: 999px;      /* fully rounded = pill shape */
+    font-family: var(--auth-display);
+    font-size: 16px;
+    font-weight: 700;          /* bold so the CTA reads strongly */
+    letter-spacing: 0.01em;
+    background: var(--auth-ink);
+    color: var(--auth-card);
+    border: 0;
+    box-shadow: none;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s, color 0.2s, transform 0.08s;
+}
+
+.auth-modal .auth-btn:hover {
+    background: var(--auth-accent);
+    color: #fff;
+}
+
+.auth-modal .auth-btn:active { transform: translateY(2px); }
+
+/* Secondary button — outlined version (used for the Sign Up switch button). */
+.auth-modal .auth-btn-secondary {
+    background: transparent;
+    color: var(--auth-ink);
+    border: 1.5px solid var(--auth-ink);
+}
+
+.auth-modal .auth-btn-secondary:hover {
+    background: var(--auth-ink);
+    color: var(--auth-card);
+}
+
+.auth-modal .auth-btn[disabled] {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+/* "or" divider with horizontal lines on either side. */
+/* The "OR" separator between Login and Sign Up buttons.
+   Uppercase + spaced letters = small-caps style, matches labeling elsewhere in the app. */
+.auth-modal .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--auth-ink-soft);
+    font-family: var(--auth-display);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;     /* "or" → "OR" */
+    letter-spacing: 0.1em;         /* wide spacing so it reads as a divider, not a word */
+    margin: 4px 0;
+}
+
+.auth-modal .auth-divider::before,
+.auth-modal .auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--auth-ink);
+    opacity: 0.35;
+}
+
+/* Overlays that slide in over the form (forgot-password, reset-sent, success).
+   They sit absolutely positioned on top of the form and toggle .show. */
+.auth-modal .auth-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--auth-card);
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 44px 40px 40px 56px;
+    gap: 14px;
+    transform: translateY(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+}
+
+.auth-modal .auth-overlay.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Heading inside the slide-in overlays ("Reset password", "Check your email", "You're in").
+   Smaller than the main h2 since overlays are secondary screens. */
+.auth-modal .auth-overlay h3 {
+    font-family: var(--auth-display);
+    font-size: 26px;
+    font-weight: 700;          /* slightly lighter than main h2 — overlays are secondary */
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.auth-modal .auth-overlay p {
+    color: var(--auth-ink-soft);
+    font-weight: 300;
+    font-size: 15px;
+    margin: 0;
+}
+
+/* "← Back to login" link inside the overlays. */
+/* "← Back to login" text link inside the overlays.
+   Small and accent-colored — looks like a link, not a button. */
+.auth-modal .auth-back {
+    margin-top: 12px;
+    font-family: var(--auth-display);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--auth-accent-deep);
+    align-self: flex-start;        /* hugs the left edge instead of stretching full width */
+    padding: 0;
+}
+
+.auth-modal .auth-back:hover { text-decoration: underline; }
+
+/* Animated check-mark icon shown in the success overlays. */
+.auth-modal .auth-success-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--auth-accent), transparent 85%);
+    display: grid;
+    place-items: center;
+    margin-bottom: 4px;
+}
+
+.auth-modal .auth-success-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--auth-accent-deep);
+}
+
+/* Animates the check-mark stroke being "drawn" on appear. */
+.auth-modal .auth-check {
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: auth-draw 0.6s ease 0.1s forwards;
+}
+
+@keyframes auth-draw { to { stroke-dashoffset: 0; } }
+
+/* Stack the two columns vertically on narrow screens. */
 @media (max-width: 720px) {
-    /* Lets the logo and theme toggle sit more naturally on smaller widths. */
-    .menu-area {
-        justify-content: space-between;
-        padding: 0 20px;
+    .auth-modal { padding: 16px; }
+    .auth-card { grid-template-columns: 1fr; min-height: 0; }
+    .auth-modal .auth-art {
+        margin: 0;
+        border-radius: 24px 24px 0 0;
+        min-height: 180px;
     }
-
-    /* Removes the large desktop margins in mobile view. */
-    .logo,
-    .theme-toggle {
-        margin: 12px 0;
+    .auth-modal .auth-form-side {
+        margin: -16px 0 0 0;
+        border-radius: 0 0 24px 24px;
+        padding: 32px 28px;
     }
-
-    /* Moves the nav onto its own centered row. */
-    .nav {
-        width: 100%;
-        justify-content: center;
-        margin: 0 0 10px;
+    .auth-modal .auth-overlay {
+        padding: 32px 28px;
+        border-radius: 0 0 24px 24px;
     }
+    .auth-modal .auth-art h1 { font-size: 40px; padding: 32px 28px 0; }
+    .auth-modal .auth-tag { padding: 10px 28px 0; font-size: 14px; }
+    .auth-modal .auth-form-side h2 { font-size: 32px; }
+}
 
-    /* Pulls the mode switch up a little less on smaller screens. */
-    .mode-switch {
-        top: -160px;
+@media (max-width: 600px) {
+    .menu-area { padding: 0 4%; }
+
+    /* Switch back to normal flow on mobile — fixed+scroll is unreliable there */
+    .hero-banner {
+        position: relative;
+        top: auto; left: auto; right: auto;
+        margin: var(--nav-height) 8px 0;
+        width: calc(100% - 16px);
+        border-radius: 14px;
+        height: 60vh;
+        min-height: 200px;
+    }
+    .page-content {
+        margin-top: 0;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     /* Slightly tighter card width and padding for mobile. */
@@ -451,4 +1334,13 @@ a {
         width: min(92%, 680px);
         padding: 22px;
     }
+    .page-content {
+        margin-top: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .scroll-cue { display: none; }
+
+    .Url, .email-content { padding: 22px 18px; }
 }

@@ -10,9 +10,10 @@
   text-shadow: 0 0 3px #fff;
 }
 #emailConfidenceBar .ldBar-label {
+  font-family: "DM Sans", "Inter", sans-serif;
   font-size: 28px;
   font-weight: 700;
-  color: #14345d;
+  color: var(--text-secondary, #5a6a85);
 }
 
 #emailConfidenceBar {
