@@ -13,25 +13,28 @@ const emailLastContentElement = document.getElementById('emailLastContent');
 const testedUrlHeadingElement = document.getElementById('testedUrlHeading');
 const shapFeatureSummaryElement = document.getElementById('shapFeatureSummary');
 let latestShapTopFeatures = [];
-// Risk labels and colors for the shared wave bar.
-// These do not depend on light/dark mode because risk severity should stay visually consistent.
-const RISK_STYLES = {
-    low: {
-        label: 'Low Risk',
-        color: '#1f8f4e',
-        trailColor: '#bfe7cf'
+// Risk labels and colors for the shared wave bar. Two palettes — the light-mode
+// values were the original deep tones; dark-mode brightens the strokes so they
+// don't get swallowed by the dark page background, and dims the trail so it
+// doesn't read as harsh white-ish on dark.
+const RISK_STYLES_BY_THEME = {
+    light: {
+        low:    { label: 'Low Risk',    color: '#1f8f4e', trailColor: '#bfe7cf' },
+        medium: { label: 'Medium Risk', color: '#b7791f', trailColor: '#f3ddb7' },
+        high:   { label: 'High Risk',   color: '#7a1f1f', trailColor: '#e7bcbc' }
     },
-    medium: {
-        label: 'Medium Risk',
-        color: '#b7791f',
-        trailColor: '#f3ddb7'
-    },
-    high: {
-        label: 'High Risk',
-        color: '#7a1f1f',
-        trailColor: '#e7bcbc'
+    dark: {
+        low:    { label: 'Low Risk',    color: '#4caf6a', trailColor: '#1f3a2a' },
+        medium: { label: 'Medium Risk', color: '#f0a040', trailColor: '#3d2f1c' },
+        high:   { label: 'High Risk',   color: '#ef6b6b', trailColor: '#3d2222' }
     }
 };
+
+function getCurrentRiskPalette() {
+    return document.body.dataset.theme === 'dark'
+        ? RISK_STYLES_BY_THEME.dark
+        : RISK_STYLES_BY_THEME.light;
+}
 
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, (character) => ({
@@ -87,6 +90,10 @@ function clearShapFeatureSummary() {
 }
 let lastUrlSubmission = null;
 let lastEmailSubmission = null;
+// Risk score currently displayed in the shared risk card. null means no scan
+// result is showing — used by applyTheme() to decide whether to repaint colors
+// on theme toggle.
+let lastRenderedRiskScore = null;
 
 // ── Report-result UI state ──
 // Each checker (URL, Email) has its own "Report Result" button. They share a
@@ -375,6 +382,13 @@ function applyTheme(theme) {
     if (themeToggleButton) {
         themeToggleButton.innerHTML = theme === 'dark' ? THEME_ICON_SUN : THEME_ICON_MOON;
     }
+
+    // If a scan result is currently showing, repaint the wave/labels with the
+    // new theme's palette. Without this the card stays frozen at the colors
+    // applied at scan time (everything is set as inline styles by JS).
+    if (lastRenderedRiskScore !== null) {
+        applyRiskStyle(lastRenderedRiskScore, document.getElementById('result'));
+    }
 }
 
 // Initializes the theme when the page first loads.
@@ -403,18 +417,21 @@ function initializeThemeToggle() {
 }
 
 // Added to group numeric scores into your Low / Medium / High risk ranges.
+// Reads the current theme on every call so toggling dark/light updates the
+// palette for the next scan.
 function getRiskStyle(score) {
     const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    const palette = getCurrentRiskPalette();
 
     if (normalizedScore <= 39) {
-        return RISK_STYLES.low;
+        return palette.low;
     }
 
     if (normalizedScore <= 69) {
-        return RISK_STYLES.medium;
+        return palette.medium;
     }
 
-    return RISK_STYLES.high;
+    return palette.high;
 }
 
 // Keeps the result text, wave bar, and risk label in sync visually.
@@ -473,6 +490,7 @@ function setEmailConfidenceBar(value) {
     }
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     const normalizedValue = Math.max(0, Math.min(100, Number(value) || 0));
+    lastRenderedRiskScore = normalizedValue;
     bar.set(normalizedValue);
 }
 
@@ -521,6 +539,7 @@ function hideEmailConfidenceBar() {
     clearShapFeatureSummary();
     const bar = emailConfidenceBarElement.ldBar || new ldBar(emailConfidenceBarElement);
     bar.set(0, false);
+    lastRenderedRiskScore = null;
 
     // Reset the bar styling back to the "low/default" appearance after hiding it.
     applyRiskStyle(0);
