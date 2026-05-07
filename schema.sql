@@ -29,6 +29,7 @@ CREATE TABLE submissions (
     email_body TEXT,
     risk_score INT,
     status VARCHAR(50) DEFAULT 'pending',
+    top_features JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

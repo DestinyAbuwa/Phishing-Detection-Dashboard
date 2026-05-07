@@ -648,9 +648,10 @@ function runUrlScan(url, userUrl, resultDiv) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 url: url,
-                status: prediction.label,
-                risk_score: riskScore // "Phishing" or "Legitimate"
-             }) // The number for your risk_score column
+                status: prediction.label, // "Phishing" or "Legitimate"
+                risk_score: riskScore, // The number for your risk_score column
+                top_features: prediction.top_features
+             })
         })
         .then(response => response.json())
         .then(data => {
@@ -665,6 +666,7 @@ function runUrlScan(url, userUrl, resultDiv) {
             }
 
             console.log("Submission ID from Database:", data.submissionId);
+            updateHistorySidebar();
         })
         .catch(err => {
             console.error("Storage Error:", err);
@@ -782,7 +784,8 @@ function runEmailScan(sender, receiver, subject, body_content, resultDiv) {
                 subject: subject.value,
                 body_content: body_content.value,
                 status: prediction.label,
-                risk_score: riskScore
+                risk_score: riskScore,
+                top_features: prediction.top_features
             })
         })
         .then(response => response.json())
@@ -797,6 +800,7 @@ function runEmailScan(sender, receiver, subject, body_content, resultDiv) {
             }
 
             console.log("Database ID:", data.submissionId);
+            updateHistorySidebar();
         })
         .catch(err => {
             console.error("Email Submission Error:", err);
@@ -895,6 +899,91 @@ document.getElementById('flipSidebarBtn').addEventListener('click', (e) => {
 });
 
 
+function updateHistorySidebar() {
+    const historyList = document.getElementById('historyList');
+    if (!historyList) return;
+
+    fetch('/api/history')
+        .then(res => res.json())
+        .then(data => {
+            historyList.innerHTML = '';
+            if (!data || data.length === 0) {
+                historyList.innerHTML = '<p class="empty-msg">No scans yet.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const title = item.url || item.subject || "Email Analysis";
+                const date = new Date(item.created_at).toLocaleDateString();
+                const riskColor = item.risk_score > 50 ? '#ef6b6b' : '#4caf6a';
+
+                const scanRow = document.createElement('div');
+                scanRow.className = 'history-item';
+                // Add your existing styles or classes here
+                scanRow.innerHTML = `
+                    <div style="display: flex; flex-direction: column; overflow: hidden; margin-right: 10px;">
+                        <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</span>
+                        <span style="font-size: 11px; opacity: 0.6;">${date}</span>
+                    </div>
+                    <span class="badge" style="background: ${riskColor}; color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                        ${item.risk_score}%
+                    </span>
+                `;
+
+                // CLICK HANDLER: This re-renders the "Analysis Details"
+                scanRow.addEventListener('click', () => {
+                    // Remove 'active-scan' from all items first
+                    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active-scan'));
+                    // Add it to the one we just clicked
+                    scanRow.classList.add('active-scan');
+                    
+                    
+                    const mode = item.url ? 'url' : 'email';
+                    setCheckerMode(mode); // Switch tabs if necessary
+                    
+                    // Populate results
+                    setEmailConfidenceBar(item.risk_score);
+                    applyRiskStyle(item.risk_score, document.getElementById('result'));
+                    
+                    // RESTORE SHAP / ANALYSIS
+                    // If you stored top_features in your DB, you'd pass them here:
+                    if (item.top_features) {
+                        try {
+                            const parsedFeatures = typeof item.top_features === 'string' 
+                                ? JSON.parse(item.top_features) 
+                                : item.top_features;
+                            
+                            updateShapFeatureSummary({ top_features: parsedFeatures });
+                        } catch (e) {
+                            console.error("Error parsing historical SHAP features:", e);
+                            clearShapFeatureSummary();
+                        }
+                    } else {
+                        clearShapFeatureSummary();
+                    }
+
+                    // This makes the "Report Result" button reappear for this specific old scan
+                    const submissionData = mode === 'url' ? { url: item.url } : {
+                        sender: item.sender_email,
+                        receiver: item.receiver_email,
+                        subject: item.subject,
+                        body_content: item.email_body
+                    };
+
+                    showReportButton(mode, {
+                        riskScore: item.risk_score,
+                        riskLabel: getRiskStyle(item.risk_score).label,
+                        submission: submissionData
+                    });
+
+                    // 5. Show what was scanned in the "Last Submission" dropdown
+                    setLastSubmission(mode, submissionData);
+                });
+
+                historyList.appendChild(scanRow);
+            });
+        });
+}
 
 function initializeLastSubmissionToggles() {
     if (urlLastToggleElement) {
@@ -1235,6 +1324,9 @@ function setAuthState(user) {
     if (navLogoutBtn) navLogoutBtn.hidden = !loggedIn;
     // Show history sidebar only if logged in
     if (historySidebar) historySidebar.hidden = !loggedIn;
+    if (loggedIn) {
+        updateHistorySidebar(); // Trigger fetch when user logs in
+    }
 }
 
 // On page load, ask the server whether we already have a session — this keeps

@@ -28,6 +28,8 @@
     --error-text-color: #c0392b;
     --section-divider-color: #e2e8f0;
     --placeholder-text-color: #9aaabb;
+    --history-border: rgba(0, 0, 0, 0.08); /* Subtle dark line for Light Mode */
+    --history-hover: rgba(0, 0, 0, 0.03);
 }
 
 body[data-theme="dark"] {
@@ -49,6 +51,8 @@ body[data-theme="dark"] {
     --error-text-color: #ff8a80;
     --section-divider-color: rgba(60, 100, 180, 0.2);
     --placeholder-text-color: rgba(90, 122, 170, 0.6);
+    --history-border: rgba(255, 255, 255, 0.1); /* Subtle light line for Dark Mode */
+    --history-hover: rgba(255, 255, 255, 0.05);
 }
 
 /* ── History Sidebar ── */
@@ -88,17 +92,18 @@ body[data-theme="dark"] {
     transform: scale(1.1);
 }
 
-/* Modified 'Handle' styling */
+/* ── Sidebar Handle Hover Effect ── */
 .sidebar-toggle-handle {
     position: absolute;
     top: 20px;
-    right: -55px; /* Stick to right edge of sidebar */
-    width: 100px;  /* Increased from 45px */
-    height: 140px; /* Increased from 110px to accommodate larger text */
+    right: -55px;
+    width: 100px;
+    height: 140px;
     background: var(--accent);
     color: white;
-    border: none;
-    border-radius: 0 16px 16px 0; /* Slightly rounder edges */
+    /* Adding a clean border that only shows up clearly on hover or dark mode */
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0 16px 16px 0;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -107,6 +112,13 @@ body[data-theme="dark"] {
     line-height: 1.2;
     z-index: 11;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-toggle-handle:hover {
+    /* Glowing border effect */
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.4);
+    filter: brightness(1.1);
 }
 
 /* Ensure right-side sidebar handle aligns correctly */
@@ -186,9 +198,63 @@ body[data-theme="dark"] {
     display: none !important;
 }
 
+/* ── History Sidebar Scroll ── */
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding-right: 15px; /* Space for the scrollbar */
+}
+
+/* Custom Scrollbar Styling to match your theme */
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: var(--card-border-color);
+    border-radius: var(--radius-pill);
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-text-color);
+}
+
+/* Make history items look clickable */
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;        /* Adds space inside each box */
+    margin-bottom: 8px;        /* Adds space BETWEEN boxes */
+    border-bottom: 1px solid var(--history-border); /* Subtle divider line */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;        /* Rounds the corners of the highlight */
+}
+
+/* Remove the border from the very last item so it looks cleaner */
+.history-item:last-child {
+    border-bottom: none;
+}
+
+/* Hover effect to make it feel interactive */
+.history-item:hover {
+    background: var(--history-hover);
+    transform: translateX(4px); /* Slight nudge to the right when hovering */
+}
+
+.active-scan {
+    background: rgba(52, 152, 219, 0.15) !important;
+    border-left: 4px solid #3498db;
+    border-bottom-color: transparent; /* Hide the divider when active */
+}
+
+/* ── Refined Swap Button ── */
 #flipSidebarBtn {
     background: var(--mode-switch-background);
-    border: 1px solid var(--card-border-color);
+    /* Improved border to distinguish from white sidebar */
+    border: 1.5px solid var(--input-border-color); 
     color: var(--secondary-text-color);
     width: 32px;
     height: 32px;
@@ -198,14 +264,16 @@ body[data-theme="dark"] {
     align-items: center;
     justify-content: center;
     transition: all var(--transition);
+    /* Subtitle shadow to lift it off the card */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
 }
 
 #flipSidebarBtn:hover {
     background: var(--accent);
-    color: white;
-    transform: rotate(180deg); /* Visual cue that things are swapping */
     border-color: var(--accent);
-    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2);
+    color: white;
+    transform: rotate(180deg) scale(1.05);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
 
 /* Make the icon slightly smaller so it looks "nested" */
@@ -214,6 +282,37 @@ body[data-theme="dark"] {
     font-size: 14px;
 }
 
+/* 1. Base style for icons (PNGs from Icons8) */
+#flipSidebarBtn img, 
+.handle-icon img {
+    width: 18px;
+    height: 18px;
+    transition: filter var(--transition);
+}
+
+/* 2. THE EXCEPTION: The Sidebar Toggle Handle 
+   Since this handle is ALWAYS blue, the icon should ALWAYS be white.
+   We force it to ignore the theme-based inversion. */
+.sidebar-toggle-handle .handle-icon img {
+    filter: invert(0) brightness(1) !important;
+}
+
+/* 3. LIGHT MODE logic for the Swap Button 
+   Only invert the swap icon when we are NOT in dark mode AND NOT hovering. */
+body:not([data-theme="dark"]) #flipSidebarBtn:not(:hover) img {
+    filter: invert(1) brightness(0.2); 
+}
+
+/* 4. DARK MODE & HOVER logic (Force white)
+   Keep it white if:
+   - We are in dark mode
+   - OR any button is hovered (turning the background blue) */
+body[data-theme="dark"] #flipSidebarBtn img,
+body[data-theme="dark"] .handle-icon img,
+#flipSidebarBtn:hover img,
+.sidebar-toggle-handle:hover .handle-icon img {
+    filter: invert(0) brightness(1);
+}
 
 body {
     font-family: "DM Sans", "Inter", sans-serif;
