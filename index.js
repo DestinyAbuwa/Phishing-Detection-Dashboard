@@ -44,6 +44,23 @@ app.use(session({
     cookie: { maxAge: 24 * 60 * 60 * 1000 } // Session lasts for 24 hours
 }));
 
+// GET /api/history - Fetch only the logged-in user's scan history
+app.get('/api/history', (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Unauthorized. Please login." });
+    }
+
+    const sql = `SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC LIMIT 15`;
+    
+    db.query(sql, [req.session.user.id], (err, results) => {
+        if (err) {
+            console.error("Database error fetching history:", err);
+            return res.status(500).json({ error: "Failed to load history" });
+        }
+        res.json(results);
+    });
+});
+
 // MIDDLEWARE: Tell the server that if a user asks for an image or CSS file, 
 // look inside the 'public' folder automatically.
 app.use(express.static('public'));
@@ -83,7 +100,7 @@ app.post('/api/check', (req, res) => {
     
     // Extract everything the user typed in from the 'request body'
     // We use the names: url, subject, sender, receiver, and body_content
-    const { url, subject, sender, receiver, body_content, risk_score, status } = req.body;
+    const { url, subject, sender, receiver, body_content, risk_score, status, top_features } = req.body;
 
     console.log(`Result for ${url || subject}: ${status} (${risk_score}%)`);
 
@@ -94,10 +111,16 @@ app.post('/api/check', (req, res) => {
 
     // SQL COMMAND: We prepare a 'query' to tell MySQL to put this URL into our table.
     // The '?' are placeholders to keep the data secure (prevents SQL Injection).
-    const sql = `INSERT INTO submissions 
-                 (url, sender_email, receiver_email, subject, email_body, risk_score, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [url, sender, receiver, subject, body_content, risk_score || 0, status || 'pending'];
+    // 1. Get the user ID from the session (if logged in)
+        const userId = req.session.user ? req.session.user.id : null;
+
+        // 2. Update the query to include user_id
+        const sql = `INSERT INTO submissions
+            (user_id, url, sender_email, receiver_email, subject, email_body, risk_score, status, top_features)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        // 3. Update the values array to match
+        const values = [userId, url, sender, receiver, subject, body_content, risk_score, status, JSON.stringify(top_features)];
 
     // RUN THE QUERY: Send the command to the database
     db.query(sql, values, (err, result) => {
@@ -116,7 +139,20 @@ app.post('/api/check', (req, res) => {
     });
 });
 
+app.post('/api/report', (req, res) => {
+    const { mode, originalRiskScore, originalRiskLabel, submission } = req.body;
 
+    const query = `INSERT INTO reports (mode, original_risk_score, original_risk_label, submission_data) VALUES (?, ?, ?, ?)`;
+    
+    // We stringify the submission object so it fits in the JSON/TEXT column
+    db.query(query, [mode, originalRiskScore, originalRiskLabel, JSON.stringify(submission)], (err, result) => {
+        if (err) {
+            console.error("Database Error:", err);
+            return res.status(500).json({ error: "Failed to save report" });
+        }
+        res.json({ message: "Report saved successfully!", reportId: result.insertId });
+    });
+});
 
 
 // SIGNUP ROUTE: Creates a new account, stores it in the users table, and
@@ -198,6 +234,7 @@ app.get('/api/can-scan', (req, res) => {
 app.get('/api/session', (req, res) => {
     res.json({ user: req.session.user || null });
 });
+
 
 // LOGOUT ROUTE: Destroys the session entirely (which also wipes scanCount —
 // the next anonymous session starts fresh at 0).

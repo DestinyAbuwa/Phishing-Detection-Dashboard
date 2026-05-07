@@ -28,6 +28,8 @@
     --error-text-color: #c0392b;
     --section-divider-color: #e2e8f0;
     --placeholder-text-color: #9aaabb;
+    --history-border: rgba(0, 0, 0, 0.08); /* Subtle dark line for Light Mode */
+    --history-hover: rgba(0, 0, 0, 0.03);
 }
 
 body[data-theme="dark"] {
@@ -46,8 +48,270 @@ body[data-theme="dark"] {
     --input-focus-border-color: oklch(0.55 0.18 252);
     --mode-switch-background: rgba(15, 25, 50, 0.9);
     --mode-switch-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --error-text-color: #ff8a80;
     --section-divider-color: rgba(60, 100, 180, 0.2);
     --placeholder-text-color: rgba(90, 122, 170, 0.6);
+    --history-border: rgba(255, 255, 255, 0.1); /* Subtle light line for Dark Mode */
+    --history-hover: rgba(255, 255, 255, 0.05);
+}
+
+/* ── History Sidebar ── */
+.history-sidebar {
+    position: absolute;
+    top: 40px; 
+    height: 500px; 
+    width: 280px;
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border-color);
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+    z-index: 10; 
+    padding: 24px 20px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* Crucial for the handle to show */
+}
+
+/* Position anchors */
+.history-sidebar.left { left: 10px; }
+.history-sidebar.right { right: 10px; }
+
+/* Slide-out logic: Move far enough to hide the 280px box + padding */
+.history-sidebar.left.retracted { transform: translateX(-305px); }
+.history-sidebar.right.retracted { transform: translateX(305px); }
+
+/* When retracted (hidden), make the tab larger and push it out further */
+.history-sidebar.left.retracted .sidebar-toggle-handle {
+    right: -110px; /* Pushed out more to prevent edge-clipping */
+    transform: scale(1.1); /* Pop out slightly */
+}
+
+.history-sidebar.right.retracted .sidebar-toggle-handle {
+    left: -110px; 
+    transform: scale(1.1);
+}
+
+/* ── Sidebar Handle Hover Effect ── */
+.sidebar-toggle-handle {
+    position: absolute;
+    top: 20px;
+    right: -55px;
+    width: 100px;
+    height: 140px;
+    background: var(--accent);
+    color: white;
+    /* Adding a clean border that only shows up clearly on hover or dark mode */
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0 16px 16px 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+    z-index: 11;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-toggle-handle:hover {
+    /* Glowing border effect */
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.4);
+    filter: brightness(1.1);
+}
+
+/* Ensure right-side sidebar handle aligns correctly */
+.history-sidebar.right .sidebar-toggle-handle {
+    right: auto;
+    left: -55px;
+    border-radius: 16px 0 0 16px;
+}
+
+/* Horizontal Stacked Text - Readable without tilting head */
+.handle-text {
+    font-size: 10px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 5px;
+    display: none; 
+}
+
+/* Adjust the text size when hidden */
+.history-sidebar.retracted .handle-text {
+    display: block;
+    font-size: 11px; /* Bigger font */
+    letter-spacing: 0.05em;
+    padding: 0 8px;
+    text-transform: uppercase;
+}
+
+/* Shrink the arrow slightly when retracted to keep focus on the text */
+.history-sidebar.retracted .handle-icon {
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+/* Icon Rotation - We ONLY rotate the icon, never the whole button */
+.handle-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+    font-size: 18px;
+}
+
+/* When hidden, point the arrow back toward the screen */
+.history-sidebar.left.retracted .handle-icon { transform: rotate(180deg); }
+.history-sidebar.right.retracted .handle-icon { transform: rotate(0deg); }
+
+/* Remove the 'scaleX' or 'rotate' from the whole handle that was mirroring your text */
+.history-sidebar.retracted .sidebar-toggle-handle {
+    transform: none; 
+}
+
+/* Header & List Logic */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.history-sidebar.retracted .history-list {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Styling for when the sidebar is OPEN */
+.history-sidebar:not(.retracted) .sidebar-toggle-handle {
+    width: 40px;   /* Slimmer */
+    height: 80px;  /* Shorter */
+    right: -40px;  /* Align to edge */
+    opacity: 0.8;  /* Slightly transparent so it doesn't distract from the list */
+}
+
+.history-sidebar.right:not(.retracted) .sidebar-toggle-handle {
+    left: -40px;
+}
+
+/* ensure hidden elements are always hidden */
+.history-sidebar[hidden] {
+    display: none !important;
+}
+
+/* ── History Sidebar Scroll ── */
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding-right: 15px; /* Space for the scrollbar */
+}
+
+/* Custom Scrollbar Styling to match your theme */
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: var(--card-border-color);
+    border-radius: var(--radius-pill);
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-text-color);
+}
+
+/* Make history items look clickable */
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;        /* Adds space inside each box */
+    margin-bottom: 8px;        /* Adds space BETWEEN boxes */
+    border-bottom: 1px solid var(--history-border); /* Subtle divider line */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;        /* Rounds the corners of the highlight */
+}
+
+/* Remove the border from the very last item so it looks cleaner */
+.history-item:last-child {
+    border-bottom: none;
+}
+
+/* Hover effect to make it feel interactive */
+.history-item:hover {
+    background: var(--history-hover);
+    transform: translateX(4px); /* Slight nudge to the right when hovering */
+}
+
+.active-scan {
+    background: rgba(52, 152, 219, 0.15) !important;
+    border-left: 4px solid #3498db;
+    border-bottom-color: transparent; /* Hide the divider when active */
+}
+
+/* ── Refined Swap Button ── */
+#flipSidebarBtn {
+    background: var(--mode-switch-background);
+    /* Improved border to distinguish from white sidebar */
+    border: 1.5px solid var(--input-border-color); 
+    color: var(--secondary-text-color);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    /* Subtitle shadow to lift it off the card */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+}
+
+#flipSidebarBtn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    transform: rotate(180deg) scale(1.05);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
+}
+
+/* Make the icon slightly smaller so it looks "nested" */
+#flipSidebarBtn svg, 
+#flipSidebarBtn {
+    font-size: 14px;
+}
+
+/* 1. Base style for icons (PNGs from Icons8) */
+#flipSidebarBtn img, 
+.handle-icon img {
+    width: 18px;
+    height: 18px;
+    transition: filter var(--transition);
+}
+
+/* 2. THE EXCEPTION: The Sidebar Toggle Handle 
+   Since this handle is ALWAYS blue, the icon should ALWAYS be white.
+   We force it to ignore the theme-based inversion. */
+.sidebar-toggle-handle .handle-icon img {
+    filter: invert(0) brightness(1) !important;
+}
+
+/* 3. LIGHT MODE logic for the Swap Button 
+   Only invert the swap icon when we are NOT in dark mode AND NOT hovering. */
+body:not([data-theme="dark"]) #flipSidebarBtn:not(:hover) img {
+    filter: invert(1) brightness(0.2); 
+}
+
+/* 4. DARK MODE & HOVER logic (Force white)
+   Keep it white if:
+   - We are in dark mode
+   - OR any button is hovered (turning the background blue) */
+body[data-theme="dark"] #flipSidebarBtn img,
+body[data-theme="dark"] .handle-icon img,
+#flipSidebarBtn:hover img,
+.sidebar-toggle-handle:hover .handle-icon img {
+    filter: invert(0) brightness(1);
 }
 
 body {
@@ -352,23 +616,45 @@ body[data-theme="dark"] .scroll-cue-label {
 /* Checker panels wrapper */
 .checker-panels {
     width: 100%;
+    padding-top: 8px;
+}
+
+/* Shared result message box.
+   Moved out of inline HTML styles so we can manage its color with theme-aware classes. */
+.result-message {
+    min-height: 30px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-weight: bold;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+/* Default result state for neutral messages. */
+.result-default {
+    color: var(--secondary-text-color);
+}
+
+/* Error result state used when the backend/prediction service fails. */
+.result-error {
+    color: var(--error-text-color);
+}
+
+/* All panels are hidden by default until JS marks the active one. */
+.checker-panels .panel {
+    display: none;
+}
+
+/* Shared card styles for both checker panels.
+   The big theme-related change is that background, text, and shadow all use variables now. */
+.Url,
+.email-content {
     max-width: 740px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.result-message {
-    min-height: 20px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    width: 100%;
-}
-
-.result-default { color: var(--secondary-text-color); }
-.result-error { color: var(--error-text-color); }
 
 .panel { display: none !important; width: 100%; }
 .panel.active { display: flex !important; }
@@ -473,6 +759,7 @@ body[data-theme="dark"] .scroll-cue-label {
     align-items: center;
     gap: 8px;
     margin-top: 4px;
+    width: 100%;
 }
 
 /* Report Result button — inherits the accent-blue styling from .Url button /
@@ -548,6 +835,9 @@ body[data-theme="dark"] .scroll-cue-label {
     padding-top: 12px;
     border-top: 1px solid var(--section-divider-color);
     margin-top: 4px;
+    width: 100%;       /* Force the box to be as wide as the card */
+    text-align: left;  /* Align the text inside that box */
+    align-self: flex-start; /* Ensure the flex parent doesn't center the whole block */
 }
 
 .last-submission-title {
