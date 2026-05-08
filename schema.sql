@@ -7,7 +7,7 @@ USE phishing_db;
 -- Delete the old version
 DROP TABLE IF EXISTS submissions;
 DROP TABLE IF EXISTS users;
-
+DROP TABLE IF EXISTS reports;
 
 -- USERS TABLE (Stores USERS login info)
 CREATE TABLE users (
@@ -21,6 +21,7 @@ CREATE TABLE users (
 -- SUBMISSIONS TABLE (Stores URLs scanned by the team)
 CREATE TABLE submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,  -- NULL allows for anonymous scans
     url TEXT,
     sender_email VARCHAR(255),
     receiver_email VARCHAR(255),
@@ -28,5 +29,17 @@ CREATE TABLE submissions (
     email_body TEXT,
     risk_score INT,
     status VARCHAR(50) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    top_features JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE reports (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    mode ENUM('url', 'email') NOT NULL,
+    original_risk_score DECIMAL(5,2),
+    original_risk_label VARCHAR(50),
+    submission_data JSON, -- Stores the full URL or Email fields
+    reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

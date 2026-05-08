@@ -1,26 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Phishing Detection Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoPhish — Phishing Detection</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="loading-bar.css">
 </head>
 
 <body data-theme="light">
+
+    <!-- Nav -->
     <div class="menu-area">
-        <a href="#" class="logo">NoPhish</a>
+        <a href="#" class="logo">No<span>Phish</span></a>
         <ul class="nav">
-        <li><a href="#home">Home</a></li>
+            <li><a href="#home">Home</a></li>
         </ul>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme">Dark mode</button>
+        <!-- Auth buttons open the shared auth modal, pre-selected to either Login or Sign Up. -->
+        <div class="nav-auth">
+            <button id="navLoginBtn" class="nav-auth-btn" type="button" data-auth-mode="login">Login</button>
+            <button id="navSignupBtn" class="nav-auth-btn nav-auth-btn-primary" type="button" data-auth-mode="signup">Sign Up</button>
+            <button id="navLogoutBtn" class="nav-auth-btn" type="button" hidden>Log out</button>
+        </div>
+        <!-- Theme toggle — icon only. JS swaps the SVG between moon (light mode → click to go dark)
+             and sun (dark mode → click to go light). aria-label keeps it accessible. -->
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme"></button>
     </div>
-    <section class="hero-banner"></section>
+
+    <!-- Hero — fish image strip -->
+    <section class="hero-banner" aria-hidden="true">
+        <div class="hero-img"></div>
+        <div class="scroll-cue">
+            <span class="scroll-cue-label">Scroll to scan</span>
+            <span class="scroll-cue-line"></span>
+            <span class="scroll-cue-chevron"></span>
+        </div>
+    </section>
+
+    <!-- Content layer — slides up over the fixed hero on scroll -->
+    <div class="page-content">
+
+    <!-- Headline below hero -->
+    <div class="clarity-headline">
+        <h2>Detect <span>phishing</span> before it&rsquo;s too late.</h2>
+        <p>Powered by Machine Learning &middot; Instant Results &middot; Free to use</p>
+    </div>
+
+    <!-- Checker -->
     <section id="home">
         <div class="mode-switch">
             <button type="button" class="mode-btn is-active" data-mode="url">URL Checker</button>
@@ -30,20 +59,47 @@
         <div class="checker-panels">
             <div id="result" class="result-message result-default"></div>
 
+            <!-- URL Panel -->
             <form class="Url panel panel-url active" id="urlForm" onsubmit="event.preventDefault(); checkURL();">
+                <div class="scan-loader" id="urlLoader"></div>
                 <h1>URL Checker</h1>
-                <input type="text" id="urlInput" placeholder="Paste link here...">
-                <button type="submit">Scan Link</button>
-                
+                <input type="text" id="urlInput" placeholder="Paste a suspicious link here&hellip;">
+                <div class="panel-actions">
+                    <!-- Report Result: hidden until a scan completes. JS in script.js
+                         removes the `hidden` attribute inside showReportButton(). -->
+                    <button id="urlReportBtn" class="report-btn" type="button" hidden
+                        data-mode="url">Report Result</button>
+                    <button type="submit">Scan Link</button>
+                    <button id="urlLastToggle" class="last-submission-toggle" type="button" hidden
+                        aria-expanded="false" aria-controls="urlLastDetails">&#9662;</button>
+                </div>
+                <div id="urlLastDetails" class="last-submission-details" hidden>
+                    <p class="last-submission-title">Last tested URL</p>
+                    <p id="urlLastContent" class="last-submission-item-value"></p>
+                </div>
             </form>
 
+            <!-- Email Panel -->
             <form class="email-content panel panel-email">
-                <h1>Email Content Checker</h1>
-                <input type="email" id="sender" placeholder="Sender Email">
-                <input type="email" id="receiver" placeholder="Receiver Email">
-                <input type="text" id="subject" placeholder="Subject">
-                <textarea id="email-body" placeholder="Email Body"></textarea>
-                <button type="button" onclick="analyzeEmail()">Analyze Email</button>
+                <div class="scan-loader" id="emailLoader"></div>
+                <h1>Email Checker</h1>
+                <input type="email" id="sender" placeholder="Sender email address">
+                <input type="email" id="receiver" placeholder="Receiver email address">
+                <input type="text" id="subject" placeholder="Subject line">
+                <textarea id="email-body" placeholder="Paste the email body here&hellip;"></textarea>
+                <div class="panel-actions">
+                    <!-- Report Result: mirrors the URL panel — hidden until the
+                         email scan finishes, then revealed by showReportButton(). -->
+                    <button id="emailReportBtn" class="report-btn" type="button" hidden
+                        data-mode="email">Report Result</button>
+                    <button type="button" onclick="analyzeEmail()">Analyze Email</button>
+                    <button id="emailLastToggle" class="last-submission-toggle" type="button" hidden
+                        aria-expanded="false" aria-controls="emailLastDetails">&#9662;</button>
+                </div>
+                <div id="emailLastDetails" class="last-submission-details" hidden>
+                    <p class="last-submission-title">Last tested email</p>
+                    <div id="emailLastContent" class="last-submission-content"></div>
+                </div>
             </form>
             <div id="riskCard" class="risk-card" style="display: none;">
                 <!-- Custom ldBar wave:
@@ -53,9 +109,8 @@
                      Q80 25 140 90 = curve up toward (80,25), then end at (140,90)
                      Smaller controlY values go higher; larger ones go lower
                      data-value = starting fill percentage before JS updates it -->
-                <h2 id="testedUrlHeading" class="tested-url-heading" style="display: none;">Tested URL:</h2>
                 <div id="emailConfidenceBar" class="ldBar label-center"
-                    style="width: min(700px, 88vw); height: 130px; margin: 0 auto;"
+                    style="width: min(640px, 88vw); height: 130px; margin: 0 auto;"
                     data-stroke="data:ldbar/res,gradient(0,1,#9df,#9fd,#df9,#fd9)"
                     data-stroke-width="14"
                     data-stroke-trail-width="9"
@@ -65,24 +120,160 @@
                     data-path="M20 90Q80 25 140 90Q200 155 260 90Q320 25 380 90Q440 155 500 90Q560 25 620 90Q680 155 740 90Q800 25 860 90"
                     data-value="0"></div>
                 <p id="riskLevelText" class="risk-level-text">Risk Level</p>
+                <div id="shapFeatureSummary" class="shap-feature-summary" aria-live="polite"></div>
             </div>
         </div>
-
-        <div class="menu-area">
-    <div class="logo">PHISHGUARD</div>
-    <ul class="nav">
-        <li><a href="/">Home</a></li>
-        <li><a href="/logout" style="color: #d9534f;">Logout</a></li>
-    </ul>
-</div>
-        
-
     </section>
+
+    <aside id="historySidebar" class="history-sidebar left retracted" hidden>
+        <button id="sidebarToggle" class="sidebar-toggle-handle">
+            <span class="handle-text">SCAN<br>HISTORY</span>
+            <span class="handle-icon">
+                <img src="images/collapse-arrow.png" alt="Toggle Sidebar" style="width: 18px; height: 18px;">
+            </span>
+        </button>
+        
+        <div class="sidebar-header">
+            <h3>Scan History</h3>
+            <button id="flipSidebarBtn" title="Switch to the other side">
+                <img src="images/swap-arrows.png" alt="Swap Side" style="width: 16px; height: 16px;">
+            </button>
+        </div>
+        <div id="historyList" class="history-list">
+            <p class="empty-msg">No scans yet.</p>
+        </div>
+    </aside>
+
+
+    </div><!-- /.page-content -->
+
+    <!-- Report Result confirmation popup.
+         Simple "are you sure?" dialog shared by both the URL and Email checkers.
+         Hidden by default (the `hidden` attribute); script.js toggles it open.
+         Elements with data-close-modal (the backdrop + Cancel button) dismiss it
+         on click — handled by initializeReportModal() in script.js. -->
+    <div id="reportModal" class="report-modal" hidden role="dialog" aria-modal="true"
+        aria-labelledby="reportModalTitle">
+
+        <!-- Dimmed backdrop. Clicking it closes the modal. -->
+        <div class="report-modal-backdrop" data-close-modal></div>
+
+        <!-- The dialog panel itself, centered on top of the backdrop. -->
+        <div class="report-modal-dialog" role="document">
+            <h2 id="reportModalTitle" class="report-modal-title">Report this result?</h2>
+            <p class="report-modal-subtitle">
+                Are you sure you want to report this result as incorrect? This helps us improve detection accuracy.
+            </p>
+
+            <!-- Cancel closes the modal via data-close-modal; Submit runs
+                 handleReportSubmit() which logs the payload and marks the
+                 report button as "✓ Reported". -->
+            <div class="report-modal-actions">
+                <button type="button" class="report-modal-cancel" data-close-modal>Cancel</button>
+                <button id="reportSubmitBtn" type="button" class="report-modal-submit">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth modal — opened by Login or Sign Up nav buttons.
+         Two-column layout (art panel + form), scaled smaller to fit as a popup.
+         Hidden by default; auth-modal.js toggles `is-open`. -->
+    <div id="authModal" class="auth-modal" hidden role="dialog" aria-modal="true"
+        aria-labelledby="authModalTitle">
+
+        <!-- Dimmed backdrop. Clicking it closes the modal. -->
+        <div class="auth-modal-backdrop" data-close-auth></div>
+
+        <!-- Two-column card: art on the left, form on the right. -->
+        <div class="auth-card" role="document">
+            <!-- Decorative left panel with hero text + fish image. -->
+            <div class="auth-art" aria-hidden="true">
+                <h1><span>Phishing detection, handled.</span>No Phish</h1>
+                <div class="auth-scene"><img src="images/fish.jpg" alt="" /></div>
+            </div>
+
+            <!-- Form panel. The h2 + button labels swap based on Login vs Sign Up mode. -->
+            <div class="auth-form-side">
+                <!-- Close button in the corner — uses data-close-auth like the backdrop. -->
+                <button type="button" class="auth-close" data-close-auth aria-label="Close">&times;</button>
+
+                <form class="auth-form" id="authForm" novalidate>
+                    <!-- data-auth-html lets JS swap this whole heading (with the <em> tag
+                         intact) when the user toggles between Login and Sign Up modes.
+                         Default content here is just a placeholder — JS overrides it. -->
+                    <h2 id="authModalTitle" data-auth-html="title">Welcome <em>back</em>.</h2>
+                    <p class="auth-subtitle" data-auth-text="subtitle">&nbsp;</p>
+
+                    <div class="auth-field" data-field="email">
+                        <input id="authEmail" type="email" name="email" placeholder=" " autocomplete="email" required />
+                        <label for="authEmail">Email</label>
+                        <span class="auth-err">Enter a valid email address</span>
+                    </div>
+
+                    <div class="auth-field" data-field="password" style="margin-top:4px">
+                        <input id="authPassword" type="password" name="password" placeholder=" "
+                            autocomplete="current-password" required minlength="6"/>
+                        <label for="authPassword">Password</label>
+                        <button type="button" class="auth-password-toggle" aria-label="Show password">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                        <span class="auth-err">Password must be at least 6 characters</span>
+                    </div>
+
+                    <div class="auth-row-between">
+                        <span></span>
+                        <button type="button" class="auth-forgot">Forgot Password?</button>
+                    </div>
+
+                    <button type="submit" class="auth-btn" data-auth-text="submit">Login</button>
+                    <div class="auth-divider">or</div>
+                    <button type="button" class="auth-btn auth-btn-secondary"
+                        data-auth-text="switch" data-auth-switch>Sign Up</button>
+                </form>
+
+                <!-- Forgot-password overlay. Slides in over the form. -->
+                <div class="auth-overlay" data-overlay="forgot">
+                    <h3>Reset password</h3>
+                    <p>Enter your email and we&rsquo;ll send you a reset link.</p>
+                    <div class="auth-field" data-field="reset-email" style="margin-top:8px">
+                        <input id="authResetEmail" type="email" placeholder=" " autocomplete="email" />
+                        <label for="authResetEmail">Email</label>
+                        <span class="auth-err">Enter a valid email address</span>
+                    </div>
+                    <button type="button" class="auth-btn auth-send-reset">Send reset link</button>
+                    <button type="button" class="auth-back">&larr; Back to login</button>
+                </div>
+
+                <!-- Reset-link-sent confirmation overlay. -->
+                <div class="auth-overlay" data-overlay="reset-sent">
+                    <div class="auth-success-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round"><path class="auth-check" d="M5 12l5 5 9-11"/></svg>
+                    </div>
+                    <h3>Check your email</h3>
+                    <p>If an account exists, a reset link is on its way.</p>
+                    <button type="button" class="auth-back">&larr; Back to login</button>
+                </div>
+
+                <!-- Successful login overlay. -->
+                <div class="auth-overlay" data-overlay="success">
+                    <div class="auth-success-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round"><path class="auth-check" d="M5 12l5 5 9-11"/></svg>
+                    </div>
+                    <h3>You&rsquo;re in.</h3>
+                    <p>Loading your dashboard…</p>
+                    <button type="button" class="auth-back">Log out</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="loading-bar.js"></script>
     <script src="script.js"></script>
 
-    
-    
 </body>
 </html>
